@@ -248,30 +248,25 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Theme</string>
+               <string>Appearance</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="theme">
+             <widget class="QComboBox" name="appearance">
               <item>
                <property name="text">
-                <string>System</string>
+                <string>Follow System</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string notr="true">flatgray</string>
+                <string>Light</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string notr="true">lightblue</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string notr="true">blacksoft</string>
+                <string>Dark</string>
                </property>
               </item>
              </widget>

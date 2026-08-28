@@ -55,5 +55,5 @@ namespace NekoGui {
 
     QString WriteVPNSingBoxConfig();
 
-    QString WriteVPNLinuxScript(const QString &configPath);
+    QString WriteVPNScript(const QString &configPath);
 } // namespace NekoGui

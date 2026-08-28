@@ -138,6 +138,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QSystemTrayIcon *tray;
+    QMenu *tray_menu;
     QShortcut *shortcut_ctrl_f = new QShortcut(QKeySequence("Ctrl+F"), this);
     QShortcut *shortcut_esc = new QShortcut(QKeySequence("Esc"), this);
     //

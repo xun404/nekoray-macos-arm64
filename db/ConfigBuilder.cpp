@@ -22,11 +22,7 @@ namespace NekoGui {
     }
 
     QString genTunName() {
-        auto tun_name = "neko-tun";
-#ifdef Q_OS_MACOS
-        tun_name = "utun9";
-#endif
-        return tun_name;
+        return "utun9";
     }
 
     void MergeJson(QJsonObject &dst, const QJsonObject &src) {
@@ -796,10 +792,7 @@ namespace NekoGui {
         return QFileInfo(file).absoluteFilePath();
     }
 
-    QString WriteVPNLinuxScript(const QString &configPath) {
-#ifdef Q_OS_WIN
-        return {};
-#endif
+    QString WriteVPNScript(const QString &configPath) {
         // gen script
         auto scriptFn = ":/neko/vpn/vpn-run-root.sh";
         if (QFile::exists("vpn/vpn-run-root.sh")) scriptFn = "vpn/vpn-run-root.sh";

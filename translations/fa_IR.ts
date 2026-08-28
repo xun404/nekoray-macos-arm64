@@ -32,14 +32,6 @@
         <translation>استایل</translation>
     </message>
     <message>
-        <source>Theme</source>
-        <translation>پوسته</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation>سیستم</translation>
-    </message>
-    <message>
         <source>Subscription</source>
         <translation>اشتراک</translation>
     </message>
@@ -114,6 +106,22 @@
         <translation>فرمت پروکسی سیستم</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Follow System</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Set custom icon</source>
         <translation>تنظیم آیکون سفارشی</translation>
     </message>
@@ -128,10 +136,6 @@
     <message>
         <source>Ignore TLS errors when updating subscription</source>
         <translation>هنگام به‌روزرسانی اشتراک، خطاهای TLS را نادیده گرفته شود</translation>
-    </message>
-    <message>
-        <source>Advanced system proxy settings. Please select a format.</source>
-        <translation>تنظیمات پیشرفته پروکسی سیستم. لطفا یک قالب را انتخاب کنید.</translation>
     </message>
     <message>
         <source>Please select a PNG file.</source>
@@ -1083,24 +1087,24 @@ This needs to be run NekoBox with administrator privileges.</source>
         <translation>سرور</translation>
     </message>
     <message>
-        <source>Ads</source>
-        <translation>تبلیغات</translation>
-    </message>
-    <message>
-        <source>Document</source>
-        <translation>اسناد</translation>
-    </message>
-    <message>
-        <source>Update</source>
-        <translation>بروزرسانی</translation>
-    </message>
-    <message>
         <source>Tun Mode</source>
         <translation>حالتvpn</translation>
     </message>
     <message>
         <source>System Proxy</source>
         <translation>پروکسی سیستمی</translation>
+    </message>
+    <message>
+        <source>NekoBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Inbound</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Type</source>
@@ -1121,14 +1125,6 @@ This needs to be run NekoBox with administrator privileges.</source>
     <message>
         <source>Traffic</source>
         <translation>ترافیک</translation>
-    </message>
-    <message>
-        <source>Log</source>
-        <translation>ثبت رویدادها</translation>
-    </message>
-    <message>
-        <source>Connection</source>
-        <translation>اتصال</translation>
     </message>
     <message>
         <source>Status</source>
@@ -1307,6 +1303,30 @@ This needs to be run NekoBox with administrator privileges.</source>
         <translation>پوشه Config باز شود</translation>
     </message>
     <message>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Documentation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Proxy</source>
+        <translation type="unfinished">پروکسی</translation>
+    </message>
+    <message>
+        <source>Connections</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Logs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Load routing and apply: %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1332,6 +1352,10 @@ This needs to be run NekoBox with administrator privileges.</source>
     </message>
     <message>
         <source>Imported %1 profile(s)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Internal TUN requires root privileges. Please disable &quot;Single Core&quot; in VPN settings and use VPN mode instead.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1441,10 +1465,6 @@ End: %2</source>
         <translation type="unfinished">تنظیمات تغییر کرد</translation>
     </message>
     <message>
-        <source>Please run NekoBox as admin</source>
-        <translation type="unfinished">لطفا Nekobox را با مجوز ادمین اجرا کنید</translation>
-    </message>
-    <message>
         <source>Restart Proxy</source>
         <translation type="unfinished">راه اندازی مجدد پروکسی</translation>
     </message>
@@ -1524,6 +1544,10 @@ End: %2</source>
     <message>
         <source>Select</source>
         <translation>انتخاب کردن</translation>
+    </message>
+    <message>
+        <source>Speedtest finished.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Update</source>

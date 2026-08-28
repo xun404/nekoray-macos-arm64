@@ -72,6 +72,7 @@ Thumbs.db
 # Custom
 /nekoray
 /build
+**/.build/
 CMakeLists.txt.user*
 /cmake-build-*
 /build-*

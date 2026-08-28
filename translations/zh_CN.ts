@@ -32,14 +32,6 @@
         <translation>样式</translation>
     </message>
     <message>
-        <source>Theme</source>
-        <translation>主题</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation>系统</translation>
-    </message>
-    <message>
         <source>Subscription</source>
         <translation>订阅</translation>
     </message>
@@ -132,10 +124,6 @@
         <translation>系统代理格式</translation>
     </message>
     <message>
-        <source>Advanced system proxy settings. Please select a format.</source>
-        <translation>高级系统代理设置。请选择一种格式。</translation>
-    </message>
-    <message>
         <source>Old Share Link Format</source>
         <translation>旧分享链接格式</translation>
     </message>
@@ -206,6 +194,22 @@
     <message>
         <source>Timeout (s)</source>
         <translation>超时（秒）</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation type="unfinished">外观</translation>
+    </message>
+    <message>
+        <source>Follow System</source>
+        <translation type="unfinished">跟随系统</translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation type="unfinished">浅色</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished">深色</translation>
     </message>
     <message>
         <source>Automatic update</source>
@@ -1087,8 +1091,16 @@ This needs to be run NekoBox with administrator privileges.</source>
         <translation>服务器</translation>
     </message>
     <message>
-        <source>Ads</source>
-        <translation>推广</translation>
+        <source>NekoBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode</source>
+        <translation type="unfinished">模式</translation>
+    </message>
+    <message>
+        <source>Inbound</source>
+        <translation type="unfinished">入站</translation>
     </message>
     <message>
         <source>Type</source>
@@ -1159,6 +1171,30 @@ This needs to be run NekoBox with administrator privileges.</source>
         <translation>禁用</translation>
     </message>
     <message>
+        <source>About</source>
+        <translation type="unfinished">关于</translation>
+    </message>
+    <message>
+        <source>Documentation</source>
+        <translation type="unfinished">文档</translation>
+    </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished">主页</translation>
+    </message>
+    <message>
+        <source>Proxy</source>
+        <translation type="unfinished">代理</translation>
+    </message>
+    <message>
+        <source>Connections</source>
+        <translation type="unfinished">连接</translation>
+    </message>
+    <message>
+        <source>Logs</source>
+        <translation type="unfinished">日志</translation>
+    </message>
+    <message>
         <source>Error</source>
         <translation>错误</translation>
     </message>
@@ -1203,14 +1239,6 @@ This needs to be run NekoBox with administrator privileges.</source>
         <translation>正在测试</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>更新</translation>
-    </message>
-    <message>
-        <source>Document</source>
-        <translation>文档</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>选择</translation>
     </message>
@@ -1221,14 +1249,6 @@ This needs to be run NekoBox with administrator privileges.</source>
     <message>
         <source>Move</source>
         <translation>移动</translation>
-    </message>
-    <message>
-        <source>Log</source>
-        <translation>日志</translation>
-    </message>
-    <message>
-        <source>Connection</source>
-        <translation>连接</translation>
     </message>
     <message>
         <source>Status</source>
@@ -1295,6 +1315,10 @@ End: %2</source>
     <message>
         <source>Load routing and apply: %1</source>
         <translation>加载路由规则并应用: %1</translation>
+    </message>
+    <message>
+        <source>Internal TUN requires root privileges. Please disable &quot;Single Core&quot; in VPN settings and use VPN mode instead.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copied %1 item(s)</source>
@@ -1451,10 +1475,6 @@ Split by line.</source>
         <translation>重启程序生效。</translation>
     </message>
     <message>
-        <source>Please run NekoBox as admin</source>
-        <translation>请以管理员权限运行 NekoBox</translation>
-    </message>
-    <message>
         <source>Restart Proxy</source>
         <translation>重启代理</translation>
     </message>
@@ -1560,6 +1580,10 @@ Direct: %2</source>
     <message>
         <source>Core not found: %1</source>
         <translation>找不到 &quot;%1&quot; 核心。请前往设置</translation>
+    </message>
+    <message>
+        <source>Speedtest finished.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Update</source>

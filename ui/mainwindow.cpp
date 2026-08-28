@@ -26,14 +26,7 @@
 #include "3rdparty/ZxingQtReader.hpp"
 #endif
 
-#ifdef Q_OS_WIN
-#include "3rdparty/WinCommander.hpp"
-#else
-#ifdef Q_OS_LINUX
-#include "sys/linux/LinuxCap.h"
-#endif
 #include <unistd.h>
-#endif
 
 #include <QClipboard>
 #include <QLabel>
@@ -62,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     NekoGui::profileManager->LoadManager();
 
     // Setup misc UI
-    themeManager->ApplyTheme(NekoGui::dataStore->theme);
+    themeManager->ApplyTheme(NekoGui::dataStore->appearance);
     ui->setupUi(this);
     //
     connect(ui->menu_start, &QAction::triggered, this, [=]() { neko_start(); });
@@ -77,7 +70,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     });
     ui->label_running->installEventFilter(this);
     ui->label_inbound->installEventFilter(this);
-    ui->splitter->installEventFilter(this);
     //
     RegisterHotkey(false);
     //
@@ -95,28 +87,66 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         QFile::copy(":/neko/dashboard-notice.html", "dashboard/index.html");
     }
 
-    // top bar
+    // top bar quick access (the same menus also live in the native menu bar)
     ui->toolButton_program->setMenu(ui->menu_program);
     ui->toolButton_preferences->setMenu(ui->menu_preferences);
     ui->toolButton_server->setMenu(ui->menu_server);
-    ui->menubar->setVisible(false);
-    connect(ui->toolButton_document, &QToolButton::clicked, this, [=] { QDesktopServices::openUrl(QUrl("https://matsuridayo.github.io/")); });
-    connect(ui->toolButton_ads, &QToolButton::clicked, this, [=] { QDesktopServices::openUrl(QUrl("https://neko-box.pages.dev/喵")); });
-    connect(ui->toolButton_update, &QToolButton::clicked, this, [=] { runOnNewThread([=] { CheckUpdate(); }); });
+    connect(ui->toolButton_url_test, &QToolButton::clicked, this, [=] { speedtest_current_group(1, true); });
+
+    // menu bar roles for the native app menu
+    ui->menu_exit->setMenuRole(QAction::QuitRole);
+    { // qApp menu on macOS: About item
+        auto about = new QAction(tr("About") + " " + software_name, this);
+        about->setMenuRole(QAction::AboutRole);
+        connect(about, &QAction::triggered, this, [=] {
+            MessageBoxInfo(software_name, software_name + " " + NKR_VERSION + "\n\nQt " + QT_VERSION_STR);
+        });
+        ui->menu_program->addAction(about);
+    }
+    { // documentation entry (replaces the old toolbar button)
+        auto doc = new QAction(tr("Documentation"), this);
+        connect(doc, &QAction::triggered, this, [=] { QDesktopServices::openUrl(QUrl("https://matsuridayo.github.io/")); });
+        ui->menu_program->addAction(doc);
+    }
+
+    // Setup sidebar navigation
+    {
+        struct NavItem {
+            QString icon;
+            QString label;
+        };
+        QList<NavItem> navItems = {
+            {"b-internet-web-browser", tr("Home")},
+            {"b-network-server", tr("Proxy")},
+            {":/icon/material/swap-vertical.svg", tr("Connections")},
+            {":/icon/material/history.svg", tr("Logs")},
+        };
+        for (const auto &navItem: navItems) {
+            auto icon = navItem.icon.startsWith(":/") ? QIcon(navItem.icon) : QIcon::fromTheme(navItem.icon);
+            ui->nekoNav->addItem(new QListWidgetItem(icon, navItem.label));
+        }
+        ui->nekoNav->setCurrentRow(NekoGui::dataStore->mw_page >= 0 && NekoGui::dataStore->mw_page < 4 ? NekoGui::dataStore->mw_page : 0);
+        connect(ui->nekoNav, &QListWidget::currentRowChanged, this, [=](int row) {
+            ui->mainStack->setCurrentIndex(row);
+            NekoGui::dataStore->mw_page = row;
+            NekoGui::dataStore->Save();
+        });
+    }
+    // sidebar footer menus
+    ui->toolButton_program->setMenu(ui->menu_program);
+    ui->toolButton_preferences->setMenu(ui->menu_preferences);
+    ui->toolButton_server->setMenu(ui->menu_server);
+    ui->toolButton_program->setToolTip(tr("Program"));
+    ui->toolButton_preferences->setToolTip(tr("Preferences"));
+    ui->toolButton_server->setToolTip(tr("Server"));
     connect(ui->toolButton_url_test, &QToolButton::clicked, this, [=] { speedtest_current_group(1, true); });
 
     // Setup log UI
-    ui->splitter->restoreState(DecodeB64IfValid(NekoGui::dataStore->splitter_state));
     qvLogDocument->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setDocument(qvLogDocument);
     ui->masterLogBrowser->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    {
-        auto font = ui->masterLogBrowser->font();
-        font.setPointSize(9);
-        ui->masterLogBrowser->setFont(font);
-        qvLogDocument->setDefaultFont(font);
-    }
+    qvLogDocument->setDefaultFont(ui->masterLogBrowser->font());
     connect(ui->masterLogBrowser->verticalScrollBar(), &QSlider::valueChanged, this, [=](int value) {
         if (ui->masterLogBrowser->verticalScrollBar()->maximum() == value)
             qvLogAutoScoll = true;
@@ -188,11 +218,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    ui->proxyListTable->verticalHeader()->setDefaultSectionSize(24);
+    // native, cleaner tables
+    ui->proxyListTable->setShowGrid(false);
+    ui->proxyListTable->setAlternatingRowColors(true);
+    ui->tableWidget_conn->setShowGrid(false);
+    ui->tableWidget_conn->setAlternatingRowColors(true);
 
     // search box
     ui->search->setVisible(false);
     connect(shortcut_ctrl_f, &QShortcut::activated, this, [=] {
+        ui->nekoNav->setCurrentRow(1); // proxy page
         ui->search->setVisible(true);
         ui->search->setFocus();
     });
@@ -230,7 +265,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Setup Tray
     tray = new QSystemTrayIcon(this); // 初始化托盘对象tray
     tray->setIcon(Icon::GetTrayIcon(Icon::NONE));
-    tray->setContextMenu(ui->menu_program); // 创建托盘菜单
+    // the menu_program actions are owned by the native menu bar,
+    // so the tray gets its own menu sharing the same QAction objects
+    tray_menu = new QMenu;
+    tray_menu->addActions(ui->menu_program->actions());
+    tray->setContextMenu(tray_menu);        // 创建托盘菜单
     tray->show();                           // 让托盘图标显示在系统托盘上
     connect(tray, &QSystemTrayIcon::activated, this, [=](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
@@ -635,8 +674,6 @@ void MainWindow::on_commitDataRequest() {
         }
     }
     //
-    NekoGui::dataStore->splitter_state = ui->splitter->saveState().toBase64();
-    //
     auto last_id = NekoGui::dataStore->started_id;
     if (NekoGui::dataStore->remember_enable && last_id >= 0) {
         NekoGui::dataStore->remember_id = last_id;
@@ -696,11 +733,7 @@ void MainWindow::on_menu_exit_triggered() {
         if (exit_reason == 3) {
             // Tun restart as admin
             arguments << "-flag_restart_tun_on";
-#ifdef Q_OS_WIN
-            WinCommander::runProcessElevated(program, arguments, "", WinCommander::SW_NORMAL, false);
-#else
             QProcess::startDetached(program, arguments);
-#endif
         } else {
             QProcess::startDetached(program, arguments);
         }
@@ -742,29 +775,7 @@ void MainWindow::neko_set_spmode_vpn(bool enable, bool save) {
             if (NekoGui::dataStore->vpn_internal_tun) {
                 bool requestPermission = !NekoGui::IsAdmin();
                 if (requestPermission) {
-#ifdef Q_OS_LINUX
-                    if (!Linux_HavePkexec()) {
-                        MessageBoxWarning(software_name, "Please install \"pkexec\" first.");
-                        neko_set_spmode_FAILED
-                    }
-                    auto ret = Linux_Pkexec_SetCapString(NekoGui::FindNekoBoxCoreRealPath(), "cap_net_admin=ep");
-                    if (ret == 0) {
-                        this->exit_reason = 3;
-                        on_menu_exit_triggered();
-                    } else {
-                        MessageBoxWarning(software_name, "Setcap for Tun mode failed.\n\n1. You may canceled the dialog.\n2. You may be using an incompatible environment like AppImage.");
-                        if (QProcessEnvironment::systemEnvironment().contains("APPIMAGE")) {
-                            MW_show_log("If you are using AppImage, it's impossible to start a Tun. Please use other package instead.");
-                        }
-                    }
-#endif
-#ifdef Q_OS_WIN
-                    auto n = QMessageBox::warning(GetMessageBoxParent(), software_name, tr("Please run NekoBox as admin"), QMessageBox::Yes | QMessageBox::No);
-                    if (n == QMessageBox::Yes) {
-                        this->exit_reason = 3;
-                        on_menu_exit_triggered();
-                    }
-#endif
+                    MessageBoxWarning(software_name, tr("Internal TUN requires root privileges. Please disable \"Single Core\" in VPN settings and use VPN mode instead."));
                     neko_set_spmode_FAILED
                 }
             } else {
@@ -880,7 +891,7 @@ void MainWindow::refresh_status(const QString &traffic_update) {
 
     // refresh title & window icon
     setWindowTitle(make_title(false));
-    if (icon_status_new != icon_status) QApplication::setWindowIcon(Icon::GetTrayIcon(Icon::NONE));
+    if (icon_status_new != icon_status) QApplication::setWindowIcon(QPixmap(":/neko/" + software_name.toLower() + ".png"));
 
     // refresh tray
     if (tray != nullptr) {
@@ -1326,7 +1337,7 @@ void MainWindow::on_menu_scan_qr_triggered() {
 
     show();
 
-    auto hints = DecodeHints()
+    auto hints = ReaderOptions()
                      .setFormats(BarcodeFormat::QRCode)
                      .setTryRotate(false)
                      .setBinarizer(Binarizer::FixedThreshold);
@@ -1627,10 +1638,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             return true;
         }
     } else if (event->type() == QEvent::MouseButtonDblClick) {
-        if (obj == ui->splitter) {
-            auto size = ui->splitter->size();
-            ui->splitter->setSizes({size.height() / 2, size.height() / 2});
-        }
+        // reserved
     }
     return QMainWindow::eventFilter(obj, event);
 }
@@ -1776,18 +1784,7 @@ bool MainWindow::StartVPNProcess() {
     }
     //
     auto configPath = NekoGui::WriteVPNSingBoxConfig();
-    auto scriptPath = NekoGui::WriteVPNLinuxScript(configPath);
-    //
-#ifdef Q_OS_WIN
-    runOnNewThread([=] {
-        vpn_pid = 1; // TODO get pid?
-        WinCommander::runProcessElevated(QApplication::applicationDirPath() + "/nekobox_core.exe",
-                                         {"--disable-color", "run", "-c", configPath}, "",
-                                         NekoGui::dataStore->vpn_hide_console ? WinCommander::SW_HIDE : WinCommander::SW_SHOWMINIMIZED); // blocking
-        vpn_pid = 0;
-        runOnUiThread([=] { neko_set_spmode_vpn(false); });
-    });
-#else
+    auto scriptPath = NekoGui::WriteVPNScript(configPath);
     //
     auto vpn_process = new QProcess;
     QProcess::connect(vpn_process, &QProcess::stateChanged, this, [=](QProcess::ProcessState state) {
@@ -1799,15 +1796,10 @@ bool MainWindow::StartVPNProcess() {
     });
     //
     vpn_process->setProcessChannelMode(QProcess::ForwardedChannels);
-#ifdef Q_OS_MACOS
-    vpn_process->start("osascript", {"-e", QStringLiteral("do shell script \"%1\" with administrator privileges")
-                                               .arg("bash " + scriptPath)});
-#else
-    vpn_process->start("pkexec", {"bash", scriptPath});
-#endif
+    vpn_process->start("osascript", {"-e", QStringLiteral("do shell script \"bash '%1'\" with administrator privileges")
+                                               .arg(scriptPath)});
     vpn_process->waitForStarted();
-    vpn_pid = vpn_process->processId(); // actually it's pkexec or bash PID
-#endif
+    vpn_pid = vpn_process->processId(); // actually it's bash PID
     return true;
 }
 
@@ -1815,26 +1807,11 @@ bool MainWindow::StopVPNProcess(bool unconditional) {
     if (unconditional || vpn_pid != 0) {
         bool ok;
         core_process->processId();
-#ifdef Q_OS_WIN
-        auto ret = WinCommander::runProcessElevated("taskkill", {"/IM", "nekobox_core.exe",
-                                                                 "/FI",
-                                                                 "PID ne " + Int2String(core_process->processId())});
-        ok = ret == 0;
-#else
         QProcess p;
-#ifdef Q_OS_MACOS
         p.start("osascript", {"-e", QStringLiteral("do shell script \"%1\" with administrator privileges")
                                         .arg("pkill -2 -U 0 nekobox_core")});
-#else
-        if (unconditional) {
-            p.start("pkexec", {"killall", "-2", "nekobox_core"});
-        } else {
-            p.start("pkexec", {"pkill", "-2", "-P", Int2String(vpn_pid)});
-        }
-#endif
         p.waitForFinished();
         ok = p.exitCode() == 0;
-#endif
         if (!unconditional) {
             ok ? vpn_pid = 0 : MessageBoxWarning(tr("Error"), tr("Failed to stop Tun process"));
         }

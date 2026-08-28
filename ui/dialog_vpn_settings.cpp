@@ -16,9 +16,8 @@ DialogVPNSettings::DialogVPNSettings(QWidget *parent) : QDialog(parent), ui(new 
     ui->vpn_mtu->setCurrentText(Int2String(NekoGui::dataStore->vpn_mtu));
     ui->vpn_ipv6->setChecked(NekoGui::dataStore->vpn_ipv6);
     ui->hide_console->setChecked(NekoGui::dataStore->vpn_hide_console);
-#ifndef Q_OS_WIN
+    // console hiding is a Windows-only option
     ui->hide_console->setVisible(false);
-#endif
     ui->strict_route->setChecked(NekoGui::dataStore->vpn_strict_route);
     ui->single_core->setChecked(NekoGui::dataStore->vpn_internal_tun);
     //

@@ -1,119 +1,92 @@
-# NekoBox For PC
+# NekoBox for macOS
 
-Qt based cross-platform GUI proxy configuration manager (backend: sing-box)
+NekoBox is a macOS-focused proxy configuration manager built around
+[sing-box](https://sing-box.sagernet.org/). This fork targets Apple Silicon
+and is transitioning from a Qt Widgets desktop interface to a native SwiftUI
+and AppKit application.
 
-Support Windows / Linux out of the box now.
+> The SwiftUI application is an active migration target. The existing Qt app
+> remains available while profile editing, configuration generation, and local
+> core control are moved to the native implementation.
 
-基于 Qt 的跨平台代理配置管理器 (后端 sing-box)
+## Platform support
 
-目前支持 Windows / Linux 开箱即用
+- macOS 13 or later
+- Apple Silicon (`arm64`)
+- sing-box based core (`nekobox_core`)
 
-## 下载 / Download
+Windows and Linux packaging have been removed from this fork.
 
-### GitHub Releases (Portable ZIP)
+## Native macOS application
 
-便携格式，无安装器。转到 Releases 下载预编译的二进制文件，解压后即可使用。
+The new application is in [`macOS/NekoBox`](macOS/NekoBox). It uses standard
+macOS navigation, tables, commands, and a Settings scene, and can read the
+legacy Qt profile and group JSON without modifying it.
 
-[![GitHub All Releases](https://img.shields.io/github/downloads/Matsuridayo/nekoray/total?label=downloads-total&logo=github&style=flat-square)](https://github.com/Matsuridayo/nekoray/releases)
+```shell
+cd macOS/NekoBox
+swift build
+./Support/build-app.sh
+```
 
-[下载 / Download](https://github.com/Matsuridayo/nekoray/releases)
+The build script produces an ad-hoc signed app at
+`macOS/NekoBox/.build/NekoBox.app`.
 
-[安装包的说明，如果你不知道要下载哪一个](https://github.com/MatsuriDayo/nekoray/wiki/Installation-package-description)
+The native target currently provides the UI shell and read-only legacy data
+loading. The remaining feature migration is tracked in
+[`macOS/NekoBox/README.md`](macOS/NekoBox/README.md).
 
-### Package
+## Building the current Qt application
 
-#### AUR
+The legacy Qt application can still be built during the transition.
 
-- [nekoray](https://aur.archlinux.org/packages/nekoray)
-- [nekoray-git](https://aur.archlinux.org/packages/nekoray-git)
+### Requirements
 
-#### archlinuxcn
+- macOS 13 or later on Apple Silicon
+- Xcode Command Line Tools
+- Go 1.23 or later
+- Homebrew dependencies:
 
-- [nekoray](https://github.com/archlinuxcn/repo/tree/master/archlinuxcn/nekoray)
-- [nekoray-git](https://github.com/archlinuxcn/repo/tree/master/archlinuxcn/nekoray-git)
+```shell
+brew install ninja qt protobuf yaml-cpp zxing-cpp
+```
 
-#### Scoop Extras
+### Build the core
 
-`scoop install nekoray`
+Fetch the companion Go repositories as described by `libs/get_source.sh`, then
+run:
 
-## 更改记录 & 发布频道 / Changelog & Telegram Channel
+```shell
+libs/build_go.sh
+```
 
-https://t.me/Matsuridayo
+The core binary is written to `deployment/macos-arm64/nekobox_core`.
 
-## 项目主页 & 文档 / Homepage & Documents
+### Build and package the app
 
-https://matsuridayo.github.io
+```shell
+cmake -S . -B build -GNinja -DQT_VERSION_MAJOR=6 -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build
+libs/deploy_macos_arm64.sh
+```
 
-## 代理 / Proxy
+The packaged app is written to `deployment/macos-arm64/NekoBox.app`.
 
-- SOCKS (4/4a/5)
-- HTTP(S)
-- Shadowsocks
-- VMess
-- VLESS
-- Trojan
-- TUIC ( sing-box )
-- NaïveProxy ( Custom Core )
-- Hysteria2 ( Custom Core or sing-box )
-- Custom Outbound
-- Custom Config
-- Custom Core
+## Development notes
 
-## 订阅 / Subscription
+- The local core service contract is defined in
+  [`go/grpc_server/gen/libcore.proto`](go/grpc_server/gen/libcore.proto).
+- Existing user data is stored under the application configuration directory
+  in `groups/`, `profiles/`, and route JSON files.
+- The native app treats those files as read-only until the Swift data and
+  configuration layers reach feature parity.
 
-- Raw: some widely used formats (like Shadowsocks, Clash and v2rayN)
-- 原始格式: 一些广泛使用的格式 (如 Shadowsocks、Clash 和 v2rayN)
+## License
 
-## 运行参数
-
-[运行参数](docs/RunFlags.md)
-
-## Windows 运行
-
-若提示 DLL 缺失，无法运行，请下载 安装 [微软 C++ 运行库](https://aka.ms/vs/17/release/vc_redist.x64.exe)
-
-## Linux 运行
-
-[Linux 运行教程](docs/Run_Linux.md)
-
-## 编译教程 / Compile Tutorial
-
-请看 [技术文档 / Technical documentation](https://github.com/MatsuriDayo/nekoray/tree/main/docs)
-
-## 捐助 / Donate
-
-如果这个项目对您有帮助，可以通过捐赠的方式帮助我们维持这个项目。
-
-捐赠满等额 50 USD 可以在「[捐赠榜](https://mtrdnt.pages.dev/donation_list)」显示头像，如果您未被添加到这里，欢迎联系我们补充。
-
-Donations of 50 USD or more can display your avatar on the [Donation List](https://mtrdnt.pages.dev/donation_list). If you are not added here, please contact us to add it.
-
-USDT TRC20
-
-`TRhnA7SXE5Sap5gSG3ijxRmdYFiD4KRhPs`
-
-XMR
-
-`49bwESYQjoRL3xmvTcjZKHEKaiGywjLYVQJMUv79bXonGiyDCs8AzE3KiGW2ytTybBCpWJUvov8SjZZEGg66a4e59GXa6k5`
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ## Credits
 
-Core:
-
-- [v2fly/v2ray-core](https://github.com/v2fly/v2ray-core) ( < 3.10 )
-- [MatsuriDayo/Matsuri](https://github.com/MatsuriDayo/Matsuri) ( < 3.10 )
-- [MatsuriDayo/v2ray-core](https://github.com/MatsuriDayo/v2ray-core) ( < 3.10 )
-- [XTLS/Xray-core](https://github.com/XTLS/Xray-core) ( 3.10 <= Version <= 3.26 )
-- [MatsuriDayo/Xray-core](https://github.com/MatsuriDayo/Xray-core) ( 3.10 <= Version <= 3.26 )
-- [SagerNet/sing-box](https://github.com/SagerNet/sing-box)
-- [Matsuridayo/sing-box-extra](https://github.com/MatsuriDayo/sing-box-extra)
-
-Gui:
-
-- [Qv2ray](https://github.com/Qv2ray/Qv2ray)
-- [Qt](https://www.qt.io/)
-- [protobuf](https://github.com/protocolbuffers/protobuf)
-- [yaml-cpp](https://github.com/jbeder/yaml-cpp)
-- [zxing-cpp](https://github.com/nu-book/zxing-cpp)
-- [QHotkey](https://github.com/Skycoder42/QHotkey)
-- [AppImageKit](https://github.com/AppImage/AppImageKit)
+NekoBox is based on the upstream work of
+[MatsuriDayo/nekoray](https://github.com/MatsuriDayo/nekoray),
+[sing-box](https://github.com/SagerNet/sing-box), and their contributors.

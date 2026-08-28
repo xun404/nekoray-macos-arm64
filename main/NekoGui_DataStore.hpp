@@ -106,9 +106,11 @@ namespace NekoGui {
         bool mux_padding = false;
         int mux_concurrency = 8;
         bool mux_default_on = false;
-        QString theme = "0";
+        QString theme = "0"; // legacy, unused by the native macOS UI
+        QString appearance = "auto"; // auto | light | dark
         int language = 0;
         QString mw_size = "";
+        int mw_page = 0; // sidebar page: 0 home, 1 proxy, 2 connections, 3 logs
         bool check_include_pre = false;
         QString system_proxy_format = "";
         QStringList log_ignore = {};

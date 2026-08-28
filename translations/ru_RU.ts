@@ -24,6 +24,22 @@
         <translation>Изменить</translation>
     </message>
     <message>
+        <source>Appearance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Follow System</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Enable</source>
         <translation>Вкл</translation>
     </message>
@@ -50,14 +66,6 @@
     <message>
         <source>Style</source>
         <translation>Стиль</translation>
-    </message>
-    <message>
-        <source>Theme</source>
-        <translation>Тема</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation>Системная</translation>
     </message>
     <message>
         <source>Set custom icon</source>
@@ -150,10 +158,6 @@
     <message>
         <source>Default uTLS Fingerprint</source>
         <translation>uTLS fingerprint по умолчанию</translation>
-    </message>
-    <message>
-        <source>Advanced system proxy settings. Please select a format.</source>
-        <translation>Дополнительные настройки системного прокси. Пожалуйста, выберите формат.</translation>
     </message>
     <message>
         <source>Please input the core name.</source>
@@ -1086,24 +1090,24 @@ https://matsuridayo.github.io/n-configuration/#vpn-tun</translation>
         <translation>Сервер</translation>
     </message>
     <message>
-        <source>Ads</source>
-        <translation>Реклама</translation>
-    </message>
-    <message>
-        <source>Document</source>
-        <translation>Документация</translation>
-    </message>
-    <message>
-        <source>Update</source>
-        <translation>Обновление</translation>
-    </message>
-    <message>
         <source>Tun Mode</source>
         <translation>Режим TUN</translation>
     </message>
     <message>
         <source>System Proxy</source>
         <translation>Режим системного прокси</translation>
+    </message>
+    <message>
+        <source>NekoBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Inbound</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Type</source>
@@ -1124,14 +1128,6 @@ https://matsuridayo.github.io/n-configuration/#vpn-tun</translation>
     <message>
         <source>Traffic</source>
         <translation>Трафик</translation>
-    </message>
-    <message>
-        <source>Log</source>
-        <translation>Журнал</translation>
-    </message>
-    <message>
-        <source>Connection</source>
-        <translation>Подключение</translation>
     </message>
     <message>
         <source>Status</source>
@@ -1359,8 +1355,32 @@ https://matsuridayo.github.io/n-configuration/#vpn-tun</translation>
         <translation>Импортирован(ы) %1 профиль(ей)</translation>
     </message>
     <message>
-        <source>Please run NekoBox as admin</source>
-        <translation>Пожалуйста, запустите NekoBox с правами администратора</translation>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Documentation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Proxy</source>
+        <translation type="unfinished">Прокси</translation>
+    </message>
+    <message>
+        <source>Connections</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Logs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Internal TUN requires root privileges. Please disable &quot;Single Core&quot; in VPN settings and use VPN mode instead.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Current server is incompatible with Tun. Please stop the server first, enable Tun Mode, and then restart.</source>
@@ -1612,6 +1632,10 @@ Deleted %3 Profiles:
     <message>
         <source>Select</source>
         <translation>Выбор</translation>
+    </message>
+    <message>
+        <source>Speedtest finished.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Update</source>

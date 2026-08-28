@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(nekobox VERSION 0.1 LANGUAGES CXX)
 
@@ -7,34 +7,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# WINDOWS PDB FILE
-if (WIN32)
-    if (MSVC)
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-    endif ()
-endif ()
-
 # Find Qt
 if (NOT QT_VERSION_MAJOR)
-    set(QT_VERSION_MAJOR 5)
+    set(QT_VERSION_MAJOR 6)
 endif ()
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Svg LinguistTools)
 
-if (NKR_CROSS)
-    set_property(TARGET Qt5::moc PROPERTY IMPORTED_LOCATION /usr/bin/moc)
-    set_property(TARGET Qt5::uic PROPERTY IMPORTED_LOCATION /usr/bin/uic)
-    set_property(TARGET Qt5::rcc PROPERTY IMPORTED_LOCATION /usr/bin/rcc)
-    set_property(TARGET Qt5::lrelease PROPERTY IMPORTED_LOCATION /usr/bin/lrelease)
-    set_property(TARGET Qt5::lupdate PROPERTY IMPORTED_LOCATION /usr/bin/lupdate)
-endif ()
-
 #### Platform Variables ####
-if (WIN32)
-    include("cmake/windows/windows.cmake")
-else ()
-    include("cmake/linux/linux.cmake")
-endif ()
+include("cmake/macos/macos.cmake")
 
 #### default prefix path ####
 
@@ -86,7 +66,7 @@ if (NKR_NO_YAML)
     nkr_add_compile_definitions(NKR_NO_YAML)
 else ()
     find_package(yaml-cpp CONFIG REQUIRED) # only Release is built
-    list(APPEND NKR_EXTERNAL_TARGETS yaml-cpp)
+    list(APPEND NKR_EXTERNAL_TARGETS yaml-cpp::yaml-cpp)
 endif ()
 
 # zxing-cpp
@@ -103,6 +83,10 @@ if (NKR_NO_QHOTKEY)
 else ()
     set(QHOTKEY_INSTALL OFF)
     set(BUILD_SHARED_LIBS OFF)
+    # QHotkey defaults to Qt5 and declares cmake_minimum_required(3.1),
+    # which CMake 4 rejects; steer it to Qt6 and allow the old minimum.
+    set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
     add_subdirectory(3rdparty/QHotkey)
     list(APPEND NKR_EXTERNAL_TARGETS qhotkey)
 endif ()
@@ -231,33 +215,13 @@ set(PROJECT_SOURCES
         ui/widget/GroupItem.ui
 
         res/neko.qrc
-        res/theme/feiyangqingyun/qss.qrc
-        ${QV2RAY_RC}
 )
 
 # Qt exe
-if (${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(nekobox
-            MANUAL_FINALIZATION
-            ${PROJECT_SOURCES}
-    )
-    # Define target properties for Android with Qt 6 as:
-    #    set_property(TARGET nekobox APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-    #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-    # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else ()
-    if (ANDROID)
-        add_library(nekobox SHARED
-                ${PROJECT_SOURCES}
-        )
-        # Define properties for Android with Qt 5 after find_package() calls as:
-        #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else ()
-        add_executable(nekobox
-                ${PROJECT_SOURCES}
-        )
-    endif ()
-endif ()
+qt_add_executable(nekobox
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+)
 
 # Target
 
@@ -265,9 +229,22 @@ set_property(TARGET nekobox PROPERTY AUTOUIC ON)
 set_property(TARGET nekobox PROPERTY AUTOMOC ON)
 set_property(TARGET nekobox PROPERTY AUTORCC ON)
 
-set_target_properties(nekobox PROPERTIES
-        WIN32_EXECUTABLE TRUE
-)
+if (APPLE)
+    set(MACOSX_BUNDLE_ICON_FILE nekobox.icns)
+    set(nekobox_icon ${CMAKE_SOURCE_DIR}/res/macos/nekobox.icns)
+    target_sources(nekobox PRIVATE ${nekobox_icon})
+    set_source_files_properties(${nekobox_icon} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    set_target_properties(nekobox PROPERTIES
+            MACOSX_BUNDLE TRUE
+            MACOSX_BUNDLE_BUNDLE_NAME "NekoBox"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "matsuri.dayo.nekobox"
+            MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+            MACOSX_BUNDLE_INFO_STRING "Qt based cross-platform GUI proxy configuration manager (backend: sing-box)"
+            MACOSX_BUNDLE_COPYRIGHT "MatsuriDayo"
+            MACOSX_BUNDLE_ICON_FILE nekobox.icns
+    )
+endif ()
 
 # Target Source Translations
 
@@ -279,12 +256,8 @@ set(TS_FILES
 set(LUPDATE_OPTIONS
         -locations none -no-obsolete
 )
-if (${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_lupdate(nekobox TS_FILES ${TS_FILES} OPTIONS ${LUPDATE_OPTIONS})
-    qt_add_lrelease(nekobox TS_FILES ${TS_FILES} QM_FILES_OUTPUT_VARIABLE QM_FILES)
-else ()
-    qt5_create_translation(QM_FILES ${PROJECT_SOURCES} ${TS_FILES} OPTIONS ${LUPDATE_OPTIONS})
-endif ()
+qt_add_lupdate(nekobox TS_FILES ${TS_FILES} OPTIONS ${LUPDATE_OPTIONS})
+qt_add_lrelease(nekobox TS_FILES ${TS_FILES} QM_FILES_OUTPUT_VARIABLE QM_FILES)
 configure_file(translations/translations.qrc ${CMAKE_BINARY_DIR} COPYONLY)
 target_sources(nekobox PRIVATE ${CMAKE_BINARY_DIR}/translations.qrc)
 
@@ -297,6 +270,4 @@ target_link_libraries(nekobox PRIVATE
         ${PLATFORM_LIBRARIES}
 )
 
-if (QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(nekobox)
-endif ()
+qt_finalize_executable(nekobox)

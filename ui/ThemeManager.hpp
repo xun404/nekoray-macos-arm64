@@ -1,11 +1,14 @@
 #pragma once
 
+#include <QString>
+
+// Native appearance controller (macOS).
+// "auto": follow system light/dark; "light"/"dark": force a scheme.
 class ThemeManager {
 public:
-    QString system_style_name = "";
-    QString current_theme = "0"; // int: 0:system 1+:builtin string: QStyleFactory
+    QString current_appearance = "auto";
 
-    void ApplyTheme(const QString &theme);
+    void ApplyTheme(const QString &appearance);
 };
 
 extern ThemeManager *themeManager;

@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QTranslator>
 #include <QMessageBox>
 #include <QStandardPaths>
@@ -13,10 +14,6 @@
 #include "main/NekoGui.hpp"
 
 #include "ui/mainwindow_interface.h"
-
-#ifdef Q_OS_WIN
-#include "sys/windows/MiniDump.h"
-#endif
 
 void signal_handler(int signum) {
     if (qApp) {
@@ -51,17 +48,9 @@ void loadTranslate(const QString& locale) {
 #define LOCAL_SERVER_PREFIX "nekoraylocalserver-"
 
 int main(int argc, char* argv[]) {
-    // Core dump
-#ifdef Q_OS_WIN
-    Windows_SetCrashHandler();
-#endif
-
     // pre-init QApplication
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) && QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
-#endif
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
-    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 #endif
     QApplication::setQuitOnLastWindowClosed(false);
     auto preQApp = new QApplication(argc, argv);
@@ -71,11 +60,6 @@ int main(int argc, char* argv[]) {
     if (QFile::exists("updater.old")) {
         QFile::remove("updater.old");
     }
-#ifndef Q_OS_WIN
-    if (!QFile::exists("updater")) {
-        QFile::link("launcher", "updater");
-    }
-#endif
 
     // Flags
     NekoGui::dataStore->argv = QApplication::arguments();
@@ -108,6 +92,15 @@ int main(int argc, char* argv[]) {
             wd.setPath(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
         }
     }
+#ifdef Q_OS_MACOS
+    // .app bundles are often installed to read-only locations (e.g. /Applications);
+    // keep portable behavior when the bundle directory is writable, otherwise store data per-user.
+    QFileInfo wdInfo(wd.absolutePath());
+    if (!wdInfo.isWritable() && !NekoGui::dataStore->flag_use_appdata) {
+        QApplication::setApplicationName("nekoray");
+        wd.setPath(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+    }
+#endif
     if (!wd.exists()) wd.mkpath(wd.absolutePath());
     if (!wd.exists("config")) wd.mkdir("config");
     QDir::setCurrent(wd.absoluteFilePath("config"));

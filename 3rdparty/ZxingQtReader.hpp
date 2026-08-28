@@ -67,7 +67,7 @@ using ZXing::BarcodeFormat;
 using ZXing::ContentType;
 #endif
 
-using ZXing::DecodeHints;
+using ZXing::ReaderOptions;
 using ZXing::Binarizer;
 using ZXing::BarcodeFormats;
 
@@ -95,7 +95,7 @@ public:
 	using Base::Base;
 };
 
-class Result : private ZXing::Result
+class Result : private ZXing::Barcode
 {
 	Q_GADGET
 
@@ -114,19 +114,19 @@ class Result : private ZXing::Result
 public:
 	Result() = default; // required for qmetatype machinery
 
-	explicit Result(ZXing::Result&& r) : ZXing::Result(std::move(r)) {
-		_text = QString::fromStdString(ZXing::Result::text());
-		_bytes = QByteArray(reinterpret_cast<const char*>(ZXing::Result::bytes().data()), Size(ZXing::Result::bytes()));
-		auto& pos = ZXing::Result::position();
+	explicit Result(ZXing::Barcode&& r) : ZXing::Barcode(std::move(r)) {
+		_text = QString::fromStdString(ZXing::Barcode::text());
+		_bytes = QByteArray(reinterpret_cast<const char*>(ZXing::Barcode::bytes().data()), ZXing::Barcode::bytes().size());
+		auto& pos = ZXing::Barcode::position();
 		auto qp = [&pos](int i) { return QPoint(pos[i].x, pos[i].y); };
 		_position = {qp(0), qp(1), qp(2), qp(3)};
 	}
 
-	using ZXing::Result::isValid;
+	using ZXing::Barcode::isValid;
 
-	BarcodeFormat format() const { return static_cast<BarcodeFormat>(ZXing::Result::format()); }
-	ContentType contentType() const { return static_cast<ContentType>(ZXing::Result::contentType()); }
-	QString formatName() const { return QString::fromStdString(ZXing::ToString(ZXing::Result::format())); }
+	BarcodeFormat format() const { return static_cast<BarcodeFormat>(ZXing::Barcode::format()); }
+	ContentType contentType() const { return static_cast<ContentType>(ZXing::Barcode::contentType()); }
+	QString formatName() const { return QString::fromStdString(ZXing::ToString(ZXing::Barcode::format())); }
 	const QString& text() const { return _text; }
 	const QByteArray& bytes() const { return _bytes; }
 	const Position& position() const { return _position; }
@@ -136,7 +136,7 @@ public:
 	Q_PROPERTY(int runTime MEMBER runTime)
 };
 
-inline QList<Result> QListResults(ZXing::Results&& zxres)
+inline QList<Result> QListResults(ZXing::Barcodes&& zxres)
 {
 	QList<Result> res;
 	for (auto&& r : zxres)
@@ -144,7 +144,7 @@ inline QList<Result> QListResults(ZXing::Results&& zxres)
 	return res;
 }
 
-inline QList<Result> ReadBarcodes(const QImage& img, const DecodeHints& hints = {})
+inline QList<Result> ReadBarcodes(const QImage& img, const ReaderOptions& hints = {})
 {
 	using namespace ZXing;
 
@@ -173,14 +173,14 @@ inline QList<Result> ReadBarcodes(const QImage& img, const DecodeHints& hints = 
 	return ImgFmtFromQImg(img) == ImageFormat::None ? exec(img.convertToFormat(QImage::Format_Grayscale8)) : exec(img);
 }
 
-inline Result ReadBarcode(const QImage& img, const DecodeHints& hints = {})
+inline Result ReadBarcode(const QImage& img, const ReaderOptions& hints = {})
 {
-	auto res = ReadBarcodes(img, DecodeHints(hints).setMaxNumberOfSymbols(1));
+	auto res = ReadBarcodes(img, ReaderOptions(hints).setMaxNumberOfSymbols(1));
 	return !res.isEmpty() ? res.takeFirst() : Result();
 }
 
 #ifdef QT_MULTIMEDIA_LIB
-inline QList<Result> ReadBarcodes(const QVideoFrame& frame, const DecodeHints& hints = {})
+inline QList<Result> ReadBarcodes(const QVideoFrame& frame, const ReaderOptions& hints = {})
 {
 	using namespace ZXing;
 
@@ -296,20 +296,20 @@ inline QList<Result> ReadBarcodes(const QVideoFrame& frame, const DecodeHints& h
 	}
 }
 
-inline Result ReadBarcode(const QVideoFrame& frame, const DecodeHints& hints = {})
+inline Result ReadBarcode(const QVideoFrame& frame, const ReaderOptions& hints = {})
 {
-	auto res = ReadBarcodes(frame, DecodeHints(hints).setMaxNumberOfSymbols(1));
+	auto res = ReadBarcodes(frame, ReaderOptions(hints).setMaxNumberOfSymbols(1));
 	return !res.isEmpty() ? res.takeFirst() : Result();
 }
 
 #define ZQ_PROPERTY(Type, name, setter) \
 public: \
 	Q_PROPERTY(Type name READ name WRITE setter NOTIFY name##Changed) \
-	Type name() const noexcept { return DecodeHints::name(); } \
+	Type name() const noexcept { return ReaderOptions::name(); } \
 	Q_SLOT void setter(const Type& newVal) \
 	{ \
 		if (name() != newVal) { \
-			DecodeHints::setter(newVal); \
+			ReaderOptions::setter(newVal); \
 			emit name##Changed(); \
 		} \
 	} \
@@ -317,9 +317,9 @@ public: \
 
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-class BarcodeReader : public QAbstractVideoFilter, private DecodeHints
+class BarcodeReader : public QAbstractVideoFilter, private ReaderOptions
 #else
-class BarcodeReader : public QObject, private DecodeHints
+class BarcodeReader : public QObject, private ReaderOptions
 #endif
 {
 	Q_OBJECT
@@ -337,15 +337,15 @@ public:
 	Q_PROPERTY(int formats READ formats WRITE setFormats NOTIFY formatsChanged)
 	int formats() const noexcept
 	{
-		auto fmts = DecodeHints::formats();
+		auto fmts = ReaderOptions::formats();
 		return *reinterpret_cast<int*>(&fmts);
 	}
 	Q_SLOT void setFormats(int newVal)
 	{
 		if (formats() != newVal) {
-			DecodeHints::setFormats(static_cast<ZXing::BarcodeFormat>(newVal));
+			ReaderOptions::setFormats(static_cast<ZXing::BarcodeFormat>(newVal));
 			emit formatsChanged();
-			qDebug() << DecodeHints::formats();
+			qDebug() << ReaderOptions::formats();
 		}
 	}
 	Q_SIGNAL void formatsChanged();

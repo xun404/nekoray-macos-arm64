@@ -9,14 +9,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
-#ifdef Q_OS_WIN
-#include "sys/windows/guihelper.h"
-#else
-#ifdef Q_OS_LINUX
-#include <sys/linux/LinuxCap.h>
-#endif
 #include <unistd.h>
-#endif
 
 namespace NekoGui_ConfigItem {
 
@@ -245,6 +238,7 @@ namespace NekoGui {
         _add(new configItem("traffic_loop_interval", &traffic_loop_interval, itemType::integer));
         _add(new configItem("test_concurrent", &test_concurrent, itemType::integer));
         _add(new configItem("theme", &theme, itemType::string));
+        _add(new configItem("appearance", &appearance, itemType::string));
         _add(new configItem("custom_inbound", &custom_inbound, itemType::string));
         _add(new configItem("custom_route", &custom_route_global, itemType::string));
         _add(new configItem("sub_use_proxy", &sub_use_proxy, itemType::boolean));
@@ -260,6 +254,7 @@ namespace NekoGui {
         _add(new configItem("fakedns", &fake_dns, itemType::boolean));
         _add(new configItem("active_routing", &active_routing, itemType::string));
         _add(new configItem("mw_size", &mw_size, itemType::string));
+        _add(new configItem("mw_page", &mw_page, itemType::integer));
         _add(new configItem("conn_stat", &connection_statistics, itemType::boolean));
         _add(new configItem("vpn_impl", &vpn_implementation, itemType::integer));
         _add(new configItem("vpn_mtu", &vpn_mtu, itemType::integer));
@@ -446,14 +441,7 @@ namespace NekoGui {
         if (isAdminCache >= 0) return isAdminCache;
 
         bool admin = false;
-#ifdef Q_OS_WIN
-        admin = Windows_IsInAdmin();
-#else
-#ifdef Q_OS_LINUX
-        admin |= Linux_GetCapString(FindNekoBoxCoreRealPath()).contains("cap_net_admin");
-#endif
         admin |= geteuid() == 0;
-#endif
 
         isAdminCache = admin;
         return admin;

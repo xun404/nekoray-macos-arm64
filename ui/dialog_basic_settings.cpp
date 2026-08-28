@@ -8,7 +8,6 @@
 #include "main/GuiUtils.hpp"
 #include "main/NekoGui.hpp"
 
-#include <QStyleFactory>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -78,19 +77,8 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
         C_EDIT_JSON_ALLOW_EMPTY(custom_inbound)
     });
 
-#ifdef Q_OS_WIN
-    connect(ui->sys_proxy_format, &QPushButton::clicked, this, [=] {
-        bool ok;
-        auto str = QInputDialog::getItem(this, ui->sys_proxy_format->text() + " (Windows)",
-                                         tr("Advanced system proxy settings. Please select a format."),
-                                         Preset::Windows::system_proxy_format,
-                                         Preset::Windows::system_proxy_format.indexOf(NekoGui::dataStore->system_proxy_format),
-                                         false, &ok);
-        if (ok) NekoGui::dataStore->system_proxy_format = str;
-    });
-#else
+    // system proxy format is only used by the Windows implementation
     ui->sys_proxy_format->hide();
-#endif
 
     // Style
     ui->connection_statistics_box->setDisabled(true);
@@ -119,29 +107,17 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
         CACHE.needRestart = true;
     });
     //
-    int built_in_len = ui->theme->count();
-    ui->theme->addItems(QStyleFactory::keys());
-    //
-    bool ok;
-    auto themeId = NekoGui::dataStore->theme.toInt(&ok);
-    if (ok) {
-        ui->theme->setCurrentIndex(themeId);
-    } else {
-        ui->theme->setCurrentText(NekoGui::dataStore->theme);
+    // Appearance: 0 = follow system, 1 = light, 2 = dark
+    {
+        auto appearance = NekoGui::dataStore->appearance;
+        int index = appearance == "light" ? 1 : appearance == "dark" ? 2 : 0;
+        ui->appearance->setCurrentIndex(index);
+        connect(ui->appearance, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+            NekoGui::dataStore->appearance = index == 1 ? "light" : index == 2 ? "dark" : "auto";
+            themeManager->ApplyTheme(NekoGui::dataStore->appearance);
+            NekoGui::dataStore->Save();
+        });
     }
-    //
-    connect(ui->theme, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-        if (index + 1 <= built_in_len) {
-            themeManager->ApplyTheme(Int2String(index));
-            NekoGui::dataStore->theme = Int2String(index);
-        } else {
-            themeManager->ApplyTheme(ui->theme->currentText());
-            NekoGui::dataStore->theme = ui->theme->currentText();
-        }
-        repaint();
-        mainwindow->repaint();
-        NekoGui::dataStore->Save();
-    });
 
     // Subscription
 
