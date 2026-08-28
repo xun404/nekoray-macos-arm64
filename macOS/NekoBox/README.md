@@ -10,6 +10,9 @@ with SwiftUI and AppKit for Apple Silicon Macs running macOS 13 or later.
 - Read-only import of legacy profile/group JSON at
   `~/Library/Preferences/nekoray/config`. Set `NEKOBOX_LEGACY_CONFIG` to test
   against another configuration directory.
+- Native profile and group creation, editing, deletion, selection, filtering,
+  endpoint copy, and activity logs. Native data is stored separately at
+  `~/Library/Application Support/NekoBox/profiles.json`.
 - An explicit `CoreService` boundary for the existing local `nekobox_core`
   gRPC process. It intentionally reports as unavailable until generated Swift
   gRPC bindings and the native configuration generator are added.
@@ -26,8 +29,8 @@ The app bundle is ad-hoc signed at `.build/NekoBox.app` by default.
 
 ## Remaining native work
 
-1. Complete profile parsing, editing, links, subscriptions, routing, and
-   sing-box configuration generation in Swift.
+1. Complete profile parsing, links, subscriptions, routing, and sing-box
+   configuration generation in Swift.
 2. Generate Swift gRPC types from `go/grpc_server/gen/libcore.proto`; implement
    authenticated local-core launch, start/stop, tests, traffic, and connections.
 3. Add native system-proxy, VPN/network-extension, Launch at Login, import/export,

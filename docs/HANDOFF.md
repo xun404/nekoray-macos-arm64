@@ -12,15 +12,16 @@ The root README on `main` intentionally states only that NekoBox is a complete n
 
 | Layer | Location | Current role |
 | --- | --- | --- |
-| Native macOS app | `macOS/NekoBox` | SwiftUI application shell, native navigation, settings, profile list, and read-only legacy profile import |
+| Native macOS app | `macOS/NekoBox` | SwiftUI application, native profile/group management, activity logs, and read-only legacy profile import |
 | Local core | `go/cmd/nekobox_core`, `go/grpc_server` | Proxy engine integration and local gRPC interface |
 | Legacy configuration | `~/Library/Preferences/nekoray/config` | Read-only compatibility input for profile and group JSON |
+| Native configuration | `~/Library/Application Support/NekoBox/profiles.json` | Writable native profile, group, and selection state |
 
 The SwiftUI app targets Apple Silicon macOS 13 or later. Its `CoreService` boundary is deliberately a placeholder: connection, latency testing, traffic, connections, system proxy, VPN, and core lifecycle controls are not implemented merely because the interface displays them.
 
 ## Legacy Data Compatibility
 
-The native app currently reads legacy profile and group JSON without writing to it. The default legacy directory is:
+The native app currently reads legacy profile and group JSON without writing to it. New or editable copies are stored separately in Application Support. The default legacy directory is:
 
 ```
 ~/Library/Preferences/nekoray/config
@@ -50,10 +51,10 @@ The bundle is written under `macOS/NekoBox/.build` and must not be committed.
 
 ## Suggested Migration Order
 
-1. Complete native Swift models, persistence, validation, and safe import/export.
+1. Add safe native import/export and complete support for all proxy configuration fields.
 2. Implement configuration generation in Swift with coverage for every supported proxy format.
 3. Generate and integrate Swift gRPC types from `go/grpc_server/gen/libcore.proto`, then implement real core lifecycle and status updates.
-4. Migrate connection testing, logs, traffic, connection inspection, routing, subscriptions, and groups.
+4. Migrate connection testing, traffic, connection inspection, routing, and subscriptions.
 5. Add system proxy, VPN/network-extension, launch-at-login, updater, and secure credential handling.
 
 ## Repository and Branch Safety

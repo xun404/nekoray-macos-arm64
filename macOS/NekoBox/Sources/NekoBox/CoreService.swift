@@ -23,7 +23,7 @@ enum CoreServiceError: LocalizedError {
 
 struct DeferredCoreService: CoreService {
     let availability = CoreAvailability.unavailable(
-        "Core integration pending — the current C++ config builder has not been ported to Swift."
+        "Core integration pending — native configuration generation and gRPC transport are not available yet."
     )
 
     func start(profile: ProxyProfile) async throws {
