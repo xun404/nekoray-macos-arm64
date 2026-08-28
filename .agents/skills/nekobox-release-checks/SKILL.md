@@ -20,7 +20,6 @@ Read `docs/HANDOFF.md` first. Choose validation that matches the changed target 
 | --- | --- |
 | `macOS/NekoBox` Swift sources | `cd macOS/NekoBox && swift build` |
 | Native bundle script or resources | Swift build, `./Support/build-app.sh`, then inspect the generated app metadata and signature |
-| Qt/CMake implementation | Build the configured Qt target when dependencies are available |
 | Go core or gRPC contract | Run the focused Go build or tests for the changed package, plus regenerate or validate affected API bindings |
 | Documentation, skills, or repository metadata | `git diff --check` and a manual scope review |
 

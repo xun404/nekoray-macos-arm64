@@ -1,10 +1,10 @@
 import Foundation
 
-/// Reads the existing Qt application's JSON files without mutating them.
+/// Reads legacy profile JSON files without mutating them.
 ///
 /// NekoBox's legacy profile format is intentionally decoded only to the level
 /// needed for navigation and list presentation. Editing or generating an
-/// outbound is deferred until the C++ config builder has a Swift replacement.
+/// outbound is deferred until the native configuration generator is available.
 struct LegacyRepository {
     private let fileManager: FileManager
     let configurationDirectory: URL
