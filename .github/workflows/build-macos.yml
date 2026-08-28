@@ -1,0 +1,50 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package Apple Silicon app
+    runs-on: macos-14
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Verify Apple Silicon runner
+        run: |
+          test "$(uname -m)" = arm64
+
+      - name: Download official Core files
+        run: zsh macOS/NekoBox/Support/download-cores.sh
+
+      - name: Build signed app bundle
+        run: macOS/NekoBox/Support/build-app.sh
+
+      - name: Create installation archive
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            macOS/NekoBox/.build/NekoBox.app \
+            NekoBox-macos-arm64.zip
+
+      - name: Upload installation archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: NekoBox-macos-arm64
+          path: NekoBox-macos-arm64.zip
+          if-no-files-found: error
+
+      - name: Publish GitHub Release archive
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" NekoBox-macos-arm64.zip --clobber \
+            || gh release create "${GITHUB_REF_NAME}" NekoBox-macos-arm64.zip --generate-notes --verify-tag

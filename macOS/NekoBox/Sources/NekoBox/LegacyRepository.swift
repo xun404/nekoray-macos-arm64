@@ -23,16 +23,16 @@ struct LegacyRepository {
 
         guard fileManager.fileExists(atPath: configurationDirectory.path) else {
             return LegacySnapshot(
-                groups: [ProxyGroup(id: 0, name: "Default", isArchived: false, subscriptionURL: nil, profileOrder: [])],
+                groups: [ProxyGroup(id: 0, name: L10n.text("legacy.defaultGroup"), isArchived: false, subscriptionURL: nil, profileOrder: [])],
                 profiles: [],
-                sourceDescription: "No legacy configuration was found at \(configurationDirectory.path)."
+                sourceDescription: L10n.text("legacy.noConfiguration", configurationDirectory.path)
             )
         }
 
         let groupOrder = loadGroupOrder(from: groupsDirectory)
         var groups = loadGroups(from: groupsDirectory)
         if groups.isEmpty {
-            groups = [ProxyGroup(id: 0, name: "Default", isArchived: false, subscriptionURL: nil, profileOrder: [])]
+            groups = [ProxyGroup(id: 0, name: L10n.text("legacy.defaultGroup"), isArchived: false, subscriptionURL: nil, profileOrder: [])]
         }
         groups.sort { lhs, rhs in
             let lhsIndex = groupOrder.firstIndex(of: lhs.id) ?? Int.max
@@ -44,7 +44,7 @@ struct LegacyRepository {
         return LegacySnapshot(
             groups: groups,
             profiles: profiles,
-            sourceDescription: "Loaded \(profiles.count) profiles from \(configurationDirectory.path)."
+            sourceDescription: L10n.text("legacy.profilesLoaded", String(profiles.count), configurationDirectory.path)
         )
     }
 
@@ -76,7 +76,7 @@ struct LegacyRepository {
 
             return ProxyGroup(
                 id: group.id,
-                name: group.name.isEmpty ? "Untitled Group" : group.name,
+                name: group.name.isEmpty ? L10n.text("legacy.untitledGroup") : group.name,
                 isArchived: group.archive,
                 subscriptionURL: URL(string: group.url),
                 profileOrder: group.order
@@ -90,7 +90,7 @@ struct LegacyRepository {
                   let profile = try? JSONDecoder().decode(LegacyProfile.self, from: data)
             else { return nil }
 
-            let address = profile.bean.address.isEmpty ? "Not configured" : profile.bean.address
+            let address = profile.bean.address.isEmpty ? L10n.text("legacy.notConfigured") : profile.bean.address
             let endpoint = profile.bean.port > 0 ? "\(address):\(profile.bean.port)" : address
             return ProxyProfile(
                 id: profile.id,
@@ -101,7 +101,8 @@ struct LegacyRepository {
                 latencyMilliseconds: profile.latency,
                 uploadedBytes: profile.traffic.uploaded,
                 downloadedBytes: profile.traffic.downloaded,
-                testReport: profile.report
+                testReport: profile.report,
+                xraySettings: xraySettings(for: profile)
             )
         }
 
@@ -122,6 +123,42 @@ struct LegacyRepository {
             options: [.skipsHiddenFiles]
         ) else { return [] }
         return files.filter { $0.pathExtension.lowercased() == "json" }
+    }
+
+    private func xraySettings(for profile: LegacyProfile) -> XrayProfileSettings? {
+        let type = profile.type.lowercased()
+        guard ["vmess", "vless", "trojan", "shadowsocks", "ss"].contains(type) else { return nil }
+
+        let stream = profile.bean.stream
+        let security = stream.realityPublicKey.isEmpty ? stream.security : "reality"
+        let vmessSecurity = ["aes-128-gcm", "chacha20-poly1305", "auto"].contains(profile.bean.security)
+            ? profile.bean.security
+            : "auto"
+
+        return XrayProfileSettings(
+            userID: type == "vless"
+                ? profile.bean.password
+                : type == "vmess" ? profile.bean.userID : "",
+            password: type == "vless" || type == "trojan" || type == "shadowsocks" || type == "ss"
+                ? profile.bean.password
+                : "",
+            method: profile.bean.method,
+            alterID: profile.bean.alterID,
+            vmessSecurity: vmessSecurity,
+            flow: profile.bean.flow,
+            stream: XrayStreamSettings(
+                network: stream.network,
+                security: security,
+                path: stream.path,
+                host: stream.host,
+                serverName: stream.serverName,
+                allowInsecure: stream.allowInsecure,
+                fingerprint: stream.fingerprint,
+                realityPublicKey: stream.realityPublicKey,
+                realityShortID: stream.realityShortID,
+                realitySpiderX: stream.realitySpiderX
+            )
+        )
     }
 }
 
@@ -179,15 +216,29 @@ private struct LegacyBean: Decodable {
     let name: String
     let address: String
     let port: Int
+    let userID: String
+    let password: String
+    let method: String
+    let alterID: Int
+    let security: String
+    let flow: String
+    let stream: LegacyStream
 
     private enum CodingKeys: String, CodingKey {
-        case name, address = "addr", port
+        case name, address = "addr", port, userID = "id", password = "pass", method, alterID = "aid", security = "sec", flow, stream
     }
 
     init() {
         name = ""
         address = ""
         port = 0
+        userID = ""
+        password = ""
+        method = "aes-128-gcm"
+        alterID = 0
+        security = "auto"
+        flow = ""
+        stream = LegacyStream()
     }
 
     init(from decoder: Decoder) throws {
@@ -195,6 +246,57 @@ private struct LegacyBean: Decodable {
         name = try values.decodeIfPresent(String.self, forKey: .name) ?? ""
         address = try values.decodeIfPresent(String.self, forKey: .address) ?? ""
         port = try values.decodeIfPresent(Int.self, forKey: .port) ?? 0
+        userID = try values.decodeIfPresent(String.self, forKey: .userID) ?? ""
+        password = try values.decodeIfPresent(String.self, forKey: .password) ?? ""
+        method = try values.decodeIfPresent(String.self, forKey: .method) ?? "aes-128-gcm"
+        alterID = try values.decodeIfPresent(Int.self, forKey: .alterID) ?? 0
+        security = try values.decodeIfPresent(String.self, forKey: .security) ?? "auto"
+        flow = try values.decodeIfPresent(String.self, forKey: .flow) ?? ""
+        stream = try values.decodeIfPresent(LegacyStream.self, forKey: .stream) ?? LegacyStream()
+    }
+}
+
+private struct LegacyStream: Decodable {
+    let network: String
+    let security: String
+    let path: String
+    let host: String
+    let serverName: String
+    let allowInsecure: Bool
+    let fingerprint: String
+    let realityPublicKey: String
+    let realityShortID: String
+    let realitySpiderX: String
+
+    private enum CodingKeys: String, CodingKey {
+        case network = "net", security = "sec", path, host, serverName = "sni", allowInsecure = "insecure", fingerprint = "utls", realityPublicKey = "pbk", realityShortID = "sid", realitySpiderX = "spx"
+    }
+
+    init() {
+        network = "tcp"
+        security = "none"
+        path = ""
+        host = ""
+        serverName = ""
+        allowInsecure = false
+        fingerprint = ""
+        realityPublicKey = ""
+        realityShortID = ""
+        realitySpiderX = ""
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        network = try values.decodeIfPresent(String.self, forKey: .network) ?? "tcp"
+        security = try values.decodeIfPresent(String.self, forKey: .security) ?? "none"
+        path = try values.decodeIfPresent(String.self, forKey: .path) ?? ""
+        host = try values.decodeIfPresent(String.self, forKey: .host) ?? ""
+        serverName = try values.decodeIfPresent(String.self, forKey: .serverName) ?? ""
+        allowInsecure = try values.decodeIfPresent(Bool.self, forKey: .allowInsecure) ?? false
+        fingerprint = try values.decodeIfPresent(String.self, forKey: .fingerprint) ?? ""
+        realityPublicKey = try values.decodeIfPresent(String.self, forKey: .realityPublicKey) ?? ""
+        realityShortID = try values.decodeIfPresent(String.self, forKey: .realityShortID) ?? ""
+        realitySpiderX = try values.decodeIfPresent(String.self, forKey: .realitySpiderX) ?? ""
     }
 }
 

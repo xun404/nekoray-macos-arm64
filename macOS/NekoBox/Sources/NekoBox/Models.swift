@@ -15,10 +15,10 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .overview: "Overview"
-        case .proxies: "Proxies"
-        case .connections: "Connections"
-        case .logs: "Logs"
+        case .overview: L10n.text("sidebar.overview")
+        case .proxies: L10n.text("sidebar.proxies")
+        case .connections: L10n.text("sidebar.connections")
+        case .logs: L10n.text("sidebar.logs")
         }
     }
 
@@ -52,6 +52,7 @@ struct ProxyProfile: Identifiable, Hashable, Codable {
     var downloadedBytes: Int64
     var testReport: String
     var origin: DataOrigin = .legacy
+    var xraySettings: XrayProfileSettings?
 
     var displayedName: String {
         name.isEmpty ? address : name
@@ -59,7 +60,7 @@ struct ProxyProfile: Identifiable, Hashable, Codable {
 
     var latencyDescription: String {
         switch latencyMilliseconds {
-        case ..<0: "Unavailable"
+        case ..<0: L10n.text("profile.unavailable")
         case 1...: "\(latencyMilliseconds) ms"
         default: "—"
         }
@@ -71,6 +72,71 @@ struct ProxyProfile: Identifiable, Hashable, Codable {
     }
 }
 
+struct XrayProfileSettings: Hashable, Codable {
+    var userID: String
+    var password: String
+    var method: String
+    var alterID: Int
+    var vmessSecurity: String
+    var flow: String
+    var stream: XrayStreamSettings
+
+    init(
+        userID: String = "",
+        password: String = "",
+        method: String = "aes-128-gcm",
+        alterID: Int = 0,
+        vmessSecurity: String = "auto",
+        flow: String = "",
+        stream: XrayStreamSettings = XrayStreamSettings()
+    ) {
+        self.userID = userID
+        self.password = password
+        self.method = method
+        self.alterID = alterID
+        self.vmessSecurity = vmessSecurity
+        self.flow = flow
+        self.stream = stream
+    }
+}
+
+struct XrayStreamSettings: Hashable, Codable {
+    var network: String
+    var security: String
+    var path: String
+    var host: String
+    var serverName: String
+    var allowInsecure: Bool
+    var fingerprint: String
+    var realityPublicKey: String
+    var realityShortID: String
+    var realitySpiderX: String
+
+    init(
+        network: String = "tcp",
+        security: String = "none",
+        path: String = "",
+        host: String = "",
+        serverName: String = "",
+        allowInsecure: Bool = false,
+        fingerprint: String = "",
+        realityPublicKey: String = "",
+        realityShortID: String = "",
+        realitySpiderX: String = ""
+    ) {
+        self.network = network
+        self.security = security
+        self.path = path
+        self.host = host
+        self.serverName = serverName
+        self.allowInsecure = allowInsecure
+        self.fingerprint = fingerprint
+        self.realityPublicKey = realityPublicKey
+        self.realityShortID = realityShortID
+        self.realitySpiderX = realitySpiderX
+    }
+}
+
 struct ProxyDraft {
     var id: Int?
     var name: String
@@ -78,6 +144,7 @@ struct ProxyDraft {
     var host: String
     var port: Int
     var groupID: Int
+    var xraySettings: XrayProfileSettings
 
     init(groupID: Int) {
         id = nil
@@ -86,16 +153,18 @@ struct ProxyDraft {
         host = ""
         port = 443
         self.groupID = groupID
+        xraySettings = XrayProfileSettings()
     }
 
     init(profile: ProxyProfile) {
         id = profile.origin == .native ? profile.id : nil
-        name = profile.origin == .native ? profile.name : "\(profile.displayedName) Copy"
+        name = profile.origin == .native ? profile.name : L10n.text("profile.copyName", profile.displayedName)
         type = profile.type
         let endpoint = ProxyDraft.endpoint(from: profile.address)
         host = endpoint.host
         port = endpoint.port
         groupID = profile.groupID
+        xraySettings = profile.xraySettings ?? XrayProfileSettings()
     }
 
     var trimmedName: String {
@@ -161,13 +230,13 @@ struct Connection: Identifiable, Hashable {
 }
 
 enum CoreAvailability: Equatable {
-    case unavailable(String)
+    case unavailable
     case ready
 
-    var description: String {
+    func description(for core: CoreKind) -> String {
         switch self {
-        case .ready: "Core service available"
-        case .unavailable(let reason): reason
+        case .ready: L10n.text("core.available", core.displayName)
+        case .unavailable: L10n.text("core.unavailableDetail", core.displayName)
         }
     }
 }

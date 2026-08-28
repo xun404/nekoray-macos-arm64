@@ -7,3 +7,5 @@ xcuserdata/
 *.xcuserstate
 *.app
 .zcode/
+macOS/NekoBox/Resources/xray
+macOS/NekoBox/Resources/sing-box

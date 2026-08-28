@@ -12,12 +12,14 @@ The root README on `main` intentionally states only that NekoBox is a complete n
 
 | Layer | Location | Current role |
 | --- | --- | --- |
-| Native macOS app | `macOS/NekoBox` | SwiftUI application, native profile/group management, activity logs, and read-only legacy profile import |
-| Local core | `go/cmd/nekobox_core`, `go/grpc_server` | Proxy engine integration and local gRPC interface |
+| Native macOS app | `macOS/NekoBox` | SwiftUI application, native profile/group management, selectable Core lifecycle, activity logs, and read-only legacy profile import |
+| Xray Core | Official GitHub download, user-selected, bundled, or common-path `xray` executable | Generated local SOCKS5/HTTP configuration for supported outbound profiles |
+| sing-box Core | Official GitHub download, user-selected, bundled, or common-path `sing-box` executable | Generated local SOCKS5/HTTP configuration for supported outbound profiles |
+| Legacy local core | `go/cmd/nekobox_core`, `go/grpc_server` | Existing sing-box proxy engine integration and local gRPC interface; not used by the SwiftUI app |
 | Legacy configuration | `~/Library/Preferences/nekoray/config` | Read-only compatibility input for profile and group JSON |
 | Native configuration | `~/Library/Application Support/NekoBox/profiles.json` | Writable native profile, group, and selection state |
 
-The SwiftUI app targets Apple Silicon macOS 13 or later. Its `CoreService` boundary is deliberately a placeholder: connection, latency testing, traffic, connections, system proxy, VPN, and core lifecycle controls are not implemented merely because the interface displays them.
+The SwiftUI app targets Apple Silicon macOS 13 or later. Its selected `CoreService` locates an executable, writes and validates an engine-specific local configuration, and starts or stops the process. The Core settings page persists a choice of Xray or sing-box, prevents switching while either process is running, and downloads the compatible official GitHub release on demand. The app verifies the SHA-256 digest published in the GitHub Release API before installing downloads at `~/Library/Application Support/NekoBox/cores`. Both engines support VLESS, VMess, Trojan, and Shadowsocks outbounds. Xray supports TCP, WebSocket, gRPC, XHTTP, and HTTPUpgrade transport settings; sing-box supports TCP, WebSocket, gRPC, and HTTPUpgrade, while rejecting XHTTP rather than emitting an invalid configuration. The app does not configure the system proxy, VPN, traffic reporting, or active-connection inspection.
 
 ## Legacy Data Compatibility
 
@@ -47,14 +49,26 @@ cd macOS/NekoBox
 ./Support/build-app.sh
 ```
 
+To prepare a bundle containing both official Apple Silicon cores:
+
+```sh
+cd macOS/NekoBox
+zsh Support/download-cores.sh
+./Support/build-app.sh
+```
+
+The helper and `.github/workflows/build-macos.yml` select the official Xray and
+sing-box GitHub Release assets, verify their published SHA-256 digests, and
+place them in `Resources` before the app bundle is signed. The downloaded Core
+files must remain untracked.
+
 The bundle is written under `macOS/NekoBox/.build` and must not be committed.
 
 ## Suggested Migration Order
 
 1. Add safe native import/export and complete support for all proxy configuration fields.
-2. Implement configuration generation in Swift with coverage for every supported proxy format.
-3. Generate and integrate Swift gRPC types from `go/grpc_server/gen/libcore.proto`, then implement real core lifecycle and status updates.
-4. Migrate connection testing, traffic, connection inspection, routing, and subscriptions.
+2. Add Xray and sing-box API integration for latency testing, traffic, and connection inspection.
+4. Migrate routing and subscriptions.
 5. Add system proxy, VPN/network-extension, launch-at-login, updater, and secure credential handling.
 
 ## Repository and Branch Safety

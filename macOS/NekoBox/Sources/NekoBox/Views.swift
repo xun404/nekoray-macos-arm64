@@ -25,7 +25,7 @@ struct RootView: View {
                 }
             )
         ) {
-            Button("OK", role: .cancel) {
+            Button(L10n.text("common.ok"), role: .cancel) {
                 state.clearNotice()
             }
         } message: {
@@ -90,21 +90,21 @@ private struct SidebarView: View {
                     .buttonStyle(.plain)
                     .contextMenu {
                         if group.origin == .native {
-                            Button("Rename Group") {
+                            Button(L10n.text("sidebar.renameGroup")) {
                                 groupToRename = group
                             }
                             Divider()
-                            Button("Delete Group", role: .destructive) {
+                            Button(L10n.text("sidebar.deleteGroup"), role: .destructive) {
                                 state.deleteGroup(group)
                             }
                         } else {
-                            Text("Legacy groups are read-only.")
+                            Text(L10n.text("state.legacyGroupReadOnly"))
                         }
                     }
                 }
             } header: {
                 HStack {
-                    Text("Proxy Groups")
+                    Text(L10n.text("sidebar.proxyGroups"))
                     Spacer()
                     Button {
                         isCreatingGroup = true
@@ -112,19 +112,19 @@ private struct SidebarView: View {
                         Image(systemName: "plus")
                     }
                     .buttonStyle(.borderless)
-                    .help("New Group")
+                    .help(L10n.text("sidebar.newGroupHelp"))
                 }
             }
         }
         .listStyle(.sidebar)
         .navigationTitle("NekoBox")
         .sheet(isPresented: $isCreatingGroup) {
-            GroupEditorSheet(title: "New Group") { name in
+            GroupEditorSheet(title: L10n.text("sidebar.newGroup")) { name in
                 state.createGroup(named: name)
             }
         }
         .sheet(item: $groupToRename) { group in
-            GroupEditorSheet(title: "Rename Group", initialName: group.name) { name in
+            GroupEditorSheet(title: L10n.text("sidebar.renameGroup"), initialName: group.name) { name in
                 state.renameGroup(group, to: name)
             }
         }
@@ -139,24 +139,24 @@ private struct WindowToolbar: ToolbarContent {
             Button {
                 state.startSelectedProfile()
             } label: {
-                Label("Connect", systemImage: "power")
+                Label(L10n.text("common.connect"), systemImage: "power")
             }
             .disabled(state.selectedProfile == nil || state.isRunning)
-            .help("Connect the selected proxy when the native Core is available.")
+            .help(L10n.text("toolbar.connectHelp"))
 
             Button {
                 state.stopCore()
             } label: {
-                Label("Disconnect", systemImage: "power.circle")
+                Label(L10n.text("common.disconnect"), systemImage: "power.circle")
             }
             .disabled(!state.isRunning)
 
             Button {
                 state.reloadLegacyData()
             } label: {
-                Label("Reload", systemImage: "arrow.clockwise")
+                Label(L10n.text("common.reload"), systemImage: "arrow.clockwise")
             }
-            .help("Reload read-only legacy profiles.")
+            .help(L10n.text("toolbar.reloadLegacyHelp"))
         }
     }
 }
@@ -169,16 +169,16 @@ private struct OverviewView: View {
             VStack(alignment: .leading, spacing: 24) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Overview")
+                        Text(L10n.text("sidebar.overview"))
                             .font(.largeTitle.weight(.semibold))
-                        Text("Native profile management for macOS")
+                        Text(L10n.text("overview.subtitle"))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button {
                         state.selectedSidebarItem = .proxies
                     } label: {
-                        Label("Manage Proxies", systemImage: "server.rack")
+                        Label(L10n.text("overview.manageProxies"), systemImage: "server.rack")
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -188,33 +188,33 @@ private struct OverviewView: View {
                     spacing: 16
                 ) {
                     StatusCard(
-                        title: "Core",
+                        title: L10n.text("overview.core"),
                         value: state.coreStatusTitle,
-                        detail: state.coreAvailability.description,
+                        detail: state.coreAvailabilityDescription,
                         systemImage: state.isRunning ? "bolt.horizontal.circle.fill" : "bolt.horizontal.circle",
                         tint: state.isRunning ? .green : .orange
                     )
 
                     StatusCard(
-                        title: "Selected Proxy",
-                        value: state.selectedProfile?.displayedName ?? "No selection",
-                        detail: state.selectedProfile?.address ?? "Choose a proxy to connect or copy its endpoint.",
+                        title: L10n.text("overview.selectedProxy"),
+                        value: state.selectedProfile?.displayedName ?? L10n.text("overview.noSelection"),
+                        detail: state.selectedProfile?.address ?? L10n.text("overview.selectProxyHint"),
                         systemImage: "server.rack",
                         tint: .blue
                     )
 
                     StatusCard(
-                        title: "Profiles",
+                        title: L10n.text("overview.profiles"),
                         value: "\(state.profiles.count)",
-                        detail: "\(state.nativeProfileCount) stored in native profile storage",
+                        detail: L10n.text("overview.nativeProfileCount", String(state.nativeProfileCount)),
                         systemImage: "tray.full",
                         tint: .indigo
                     )
 
                     StatusCard(
-                        title: "Activity",
+                        title: L10n.text("overview.activity"),
                         value: "\(state.activityLogs.count)",
-                        detail: "Recent local events are available in Logs.",
+                        detail: L10n.text("overview.recentEvents"),
                         systemImage: "text.line.first.and.arrowtriangle.forward",
                         tint: .teal
                     )
@@ -223,11 +223,11 @@ private struct OverviewView: View {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Label("Quick Actions", systemImage: "bolt.fill")
+                            Label(L10n.text("overview.quickActions"), systemImage: "bolt.fill")
                                 .font(.headline)
                             Spacer()
                             if let selectedProfile = state.selectedProfile {
-                                Text(selectedProfile.origin == .native ? "Native profile" : "Legacy profile")
+                                Text(selectedProfile.origin == .native ? L10n.text("overview.nativeProfile") : L10n.text("overview.legacyProfile"))
                                     .font(.caption.weight(.medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -237,27 +237,27 @@ private struct OverviewView: View {
                             Button {
                                 state.copySelectedEndpoint()
                             } label: {
-                                Label("Copy Endpoint", systemImage: "doc.on.doc")
+                                Label(L10n.text("overview.copyEndpoint"), systemImage: "doc.on.doc")
                             }
                             .disabled(state.selectedProfile == nil)
 
                             Button {
                                 state.requestLatencyTest()
                             } label: {
-                                Label("Test Latency", systemImage: "gauge.with.dots.needle.67percent")
+                                Label(L10n.text("overview.testLatency"), systemImage: "gauge.with.dots.needle.67percent")
                             }
                             .disabled(state.selectedProfile == nil)
 
                             Button {
                                 state.reloadLegacyData()
                             } label: {
-                                Label("Reload Imports", systemImage: "arrow.triangle.2.circlepath")
+                                Label(L10n.text("overview.reloadImports"), systemImage: "arrow.triangle.2.circlepath")
                             }
                         }
 
                         Divider()
 
-                        LabeledContent("Native profile storage") {
+                        LabeledContent(L10n.text("overview.nativeProfileStorage")) {
                             Text(state.nativeStorageLocation)
                                 .textSelection(.enabled)
                                 .font(.caption.monospaced())
@@ -270,18 +270,18 @@ private struct OverviewView: View {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Label("Network Services", systemImage: "network")
+                            Label(L10n.text("overview.networkServices"), systemImage: "network")
                                 .font(.headline)
                             Spacer()
-                            Text("Core required")
+                            Text(L10n.text("overview.coreRequired"))
                                 .font(.caption.weight(.medium))
                                 .foregroundStyle(.orange)
                         }
 
-                        Text("System Proxy, VPN Mode, inbound listeners, and connection inspection will become available after native Core integration.")
+                        Text(L10n.text("overview.networkServicesDescription"))
                             .foregroundStyle(.secondary)
 
-                        Button("Show Integration Status") {
+                        Button(L10n.text("overview.showIntegrationStatus")) {
                             state.showSystemServiceStatus()
                         }
                     }
@@ -291,7 +291,7 @@ private struct OverviewView: View {
             .frame(maxWidth: 1_040, alignment: .leading)
             .padding(32)
         }
-        .navigationTitle("Overview")
+        .navigationTitle(L10n.text("sidebar.overview"))
     }
 }
 
@@ -344,12 +344,12 @@ private struct ProxiesView: View {
 
     var body: some View {
         Table(state.profiles(matching: query), selection: profileSelection) {
-            TableColumn("Name") { profile in
+            TableColumn(L10n.text("table.name")) { profile in
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(profile.displayedName)
                         if profile.origin == .native {
-                            Text("Native")
+                            Text(L10n.text("overview.nativeProfile"))
                                 .font(.caption2.weight(.medium))
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
@@ -362,23 +362,23 @@ private struct ProxiesView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            TableColumn("Type") { profile in
+            TableColumn(L10n.text("table.type")) { profile in
                 Text(profile.type.uppercased())
                     .foregroundStyle(.secondary)
             }
-            TableColumn("Latency") { profile in
+            TableColumn(L10n.text("table.latency")) { profile in
                 Text(profile.latencyDescription)
                     .foregroundStyle(latencyColor(for: profile))
                     .monospacedDigit()
             }
-            TableColumn("Traffic") { profile in
+            TableColumn(L10n.text("table.traffic")) { profile in
                 Text(profile.trafficDescription)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
         }
-        .searchable(text: $query, prompt: "Search name, address, or type")
-        .navigationTitle(state.selectedGroup?.name ?? "Proxies")
+        .searchable(text: $query, prompt: L10n.text("proxies.search"))
+        .navigationTitle(state.selectedGroup?.name ?? L10n.text("sidebar.proxies"))
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
                 Menu {
@@ -386,27 +386,27 @@ private struct ProxiesView: View {
                         draft = state.makeNewProfileDraft()
                         isPresentingEditor = true
                     } label: {
-                        Label("New Proxy", systemImage: "plus")
+                        Label(L10n.text("proxies.newProxy"), systemImage: "plus")
                     }
                     Button {
                         isPresentingGroupEditor = true
                     } label: {
-                        Label("New Group", systemImage: "folder.badge.plus")
+                        Label(L10n.text("sidebar.newGroup"), systemImage: "folder.badge.plus")
                     }
                 } label: {
-                    Label("Add", systemImage: "plus")
+                    Label(L10n.text("common.add"), systemImage: "plus")
                 }
 
                 Button {
                     guard let profile = state.selectedProfile else {
-                        state.presentNotice("Select a proxy to edit.")
+                        state.presentNotice(L10n.text("proxies.selectProxyToEdit"))
                         return
                     }
                     draft = state.makeProfileDraft(for: profile)
                     isPresentingEditor = true
                 } label: {
                     Label(
-                        state.selectedProfileIsNative ? "Edit" : "Make Editable Copy",
+                        state.selectedProfileIsNative ? L10n.text("common.edit") : L10n.text("proxies.makeEditableCopy"),
                         systemImage: state.selectedProfileIsNative ? "pencil" : "doc.on.doc"
                     )
                 }
@@ -415,14 +415,14 @@ private struct ProxiesView: View {
                 Button(role: .destructive) {
                     state.deleteSelectedProfile()
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label(L10n.text("common.delete"), systemImage: "trash")
                 }
                 .disabled(!state.selectedProfileIsNative)
 
                 Button {
                     state.requestLatencyTest()
                 } label: {
-                    Label("Test Latency", systemImage: "gauge.with.dots.needle.67percent")
+                    Label(L10n.text("overview.testLatency"), systemImage: "gauge.with.dots.needle.67percent")
                 }
                 .disabled(state.selectedProfile == nil)
             }
@@ -430,11 +430,11 @@ private struct ProxiesView: View {
         .overlay {
             if state.profiles(matching: query).isEmpty {
                 EmptyStateView(
-                    title: query.isEmpty ? "No Proxies in This Group" : "No Matching Proxies",
+                    title: query.isEmpty ? L10n.text("proxies.emptyGroup") : L10n.text("proxies.emptySearch"),
                     systemImage: "server.rack",
                     message: query.isEmpty
-                        ? "Add a native proxy or reload the read-only legacy import."
-                        : "Try a different name, address, or proxy type."
+                        ? L10n.text("proxies.emptyGroupDescription")
+                        : L10n.text("proxies.emptySearchDescription")
                 )
             }
         }
@@ -444,7 +444,7 @@ private struct ProxiesView: View {
             }
         }
         .sheet(isPresented: $isPresentingGroupEditor) {
-            GroupEditorSheet(title: "New Group") { name in
+            GroupEditorSheet(title: L10n.text("sidebar.newGroup")) { name in
                 state.createGroup(named: name)
             }
         }
@@ -484,55 +484,99 @@ private struct ProxyEditorSheet: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(draft.id == nil ? "New Native Proxy" : "Edit Native Proxy")
+                    Text(draft.id == nil ? L10n.text("editor.newNativeProxy") : L10n.text("editor.editNativeProxy"))
                         .font(.title2.weight(.semibold))
-                    Text("Saved only in NekoBox Application Support storage.")
+                    Text(L10n.text("editor.storageNotice"))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Cancel") {
+                Button(L10n.text("common.cancel")) {
                     dismiss()
                 }
             }
 
             Form {
-                TextField("Name", text: $draft.name)
+                TextField(L10n.text("editor.name"), text: $draft.name)
 
-                Picker("Type", selection: $draft.type) {
+                Picker(L10n.text("editor.type"), selection: $draft.type) {
                     Text("Shadowsocks").tag("Shadowsocks")
                     Text("VLESS").tag("VLESS")
                     Text("VMess").tag("VMess")
                     Text("Trojan").tag("Trojan")
                     Text("SOCKS").tag("SOCKS")
                     Text("HTTP").tag("HTTP")
-                    Text("Custom").tag("Custom")
+                    Text(L10n.text("editor.custom")).tag("Custom")
                 }
 
-                Picker("Group", selection: $draft.groupID) {
+                Picker(L10n.text("editor.group"), selection: $draft.groupID) {
                     ForEach(groups) { group in
                         Text(group.name).tag(group.id)
                     }
                 }
 
-                TextField("Server", text: $draft.host, prompt: Text("example.com"))
-                TextField("Port", value: $draft.port, format: .number)
+                TextField(L10n.text("editor.server"), text: $draft.host, prompt: Text("example.com"))
+                TextField(L10n.text("editor.port"), value: $draft.port, format: .number)
 
-                LabeledContent("Endpoint preview") {
+                LabeledContent(L10n.text("editor.endpointPreview")) {
                     Text(draft.endpoint)
                         .font(.body.monospaced())
                         .textSelection(.enabled)
+                }
+
+                Section(L10n.text("editor.coreSettings")) {
+                    if ["vless", "vmess"].contains(draft.type.lowercased()) {
+                        TextField(L10n.text("editor.userID"), text: $draft.xraySettings.userID)
+                    }
+
+                    if ["trojan", "shadowsocks"].contains(draft.type.lowercased()) {
+                        SecureField(L10n.text("editor.password"), text: $draft.xraySettings.password)
+                    }
+
+                    if draft.type.caseInsensitiveCompare("Shadowsocks") == .orderedSame {
+                        TextField(L10n.text("editor.method"), text: $draft.xraySettings.method)
+                    }
+
+                    if draft.type.caseInsensitiveCompare("VLESS") == .orderedSame {
+                        TextField(L10n.text("editor.flow"), text: $draft.xraySettings.flow)
+                    }
+
+                    Picker(L10n.text("editor.transport"), selection: $draft.xraySettings.stream.network) {
+                        Text("TCP").tag("tcp")
+                        Text("WebSocket").tag("ws")
+                        Text("gRPC").tag("grpc")
+                        Text("XHTTP").tag("xhttp")
+                        Text("HTTPUpgrade").tag("httpupgrade")
+                    }
+
+                    Picker(L10n.text("editor.transportSecurity"), selection: $draft.xraySettings.stream.security) {
+                        Text(L10n.text("editor.securityNone")).tag("none")
+                        Text("TLS").tag("tls")
+                        Text("REALITY").tag("reality")
+                    }
+
+                    TextField(L10n.text("editor.path"), text: $draft.xraySettings.stream.path)
+                    TextField(L10n.text("editor.host"), text: $draft.xraySettings.stream.host)
+                    TextField(L10n.text("editor.serverName"), text: $draft.xraySettings.stream.serverName)
+                    Toggle(L10n.text("editor.allowInsecure"), isOn: $draft.xraySettings.stream.allowInsecure)
+                    TextField(L10n.text("editor.fingerprint"), text: $draft.xraySettings.stream.fingerprint)
+
+                    if draft.xraySettings.stream.security.caseInsensitiveCompare("reality") == .orderedSame {
+                        TextField(L10n.text("editor.realityPublicKey"), text: $draft.xraySettings.stream.realityPublicKey)
+                        TextField(L10n.text("editor.realityShortID"), text: $draft.xraySettings.stream.realityShortID)
+                        TextField(L10n.text("editor.realitySpiderX"), text: $draft.xraySettings.stream.realitySpiderX)
+                    }
                 }
             }
             .formStyle(.grouped)
 
             HStack {
                 if !draft.isValid {
-                    Label("A name, server, and valid port are required.", systemImage: "exclamationmark.circle")
+                    Label(L10n.text("editor.validFieldsRequired"), systemImage: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Save") {
+                Button(L10n.text("common.save")) {
                     onSave(draft)
                     dismiss()
                 }
@@ -561,13 +605,13 @@ private struct GroupEditorSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(title)
                 .font(.title2.weight(.semibold))
-            TextField("Group name", text: $name)
+            TextField(L10n.text("groupEditor.groupName"), text: $name)
             HStack {
                 Spacer()
-                Button("Cancel") {
+                Button(L10n.text("common.cancel")) {
                     dismiss()
                 }
-                Button("Save") {
+                Button(L10n.text("common.save")) {
                     onSave(name)
                     dismiss()
                 }
@@ -587,24 +631,24 @@ private struct ConnectionsView: View {
         VStack(spacing: 0) {
             if state.connections.isEmpty {
                 EmptyStateView(
-                    title: "No Active Connections",
+                    title: L10n.text("connections.noActive"),
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    message: "Connection inspection will populate here when the native Core service is connected."
+                    message: L10n.text("connections.emptyDescription")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Table(state.connections) {
-                    TableColumn("Inbound") { Text($0.inbound) }
-                    TableColumn("Destination") { Text($0.destination) }
-                    TableColumn("Rule") { Text($0.rule) }
-                    TableColumn("Started") {
+                    TableColumn(L10n.text("connections.inbound")) { Text($0.inbound) }
+                    TableColumn(L10n.text("connections.destination")) { Text($0.destination) }
+                    TableColumn(L10n.text("connections.rule")) { Text($0.rule) }
+                    TableColumn(L10n.text("connections.started")) {
                         Text($0.createdAt, format: .dateTime.hour().minute().second())
                             .monospacedDigit()
                     }
                 }
             }
         }
-        .navigationTitle("Connections")
+        .navigationTitle(L10n.text("sidebar.connections"))
     }
 }
 
@@ -615,9 +659,9 @@ private struct LogsView: View {
         List {
             if state.activityLogs.isEmpty {
                 EmptyStateView(
-                    title: "No Activity Yet",
+                    title: L10n.text("logs.noActivity"),
                     systemImage: "text.alignleft",
-                    message: "Profile changes and Core actions will appear here."
+                    message: L10n.text("logs.emptyDescription")
                 )
                 .frame(maxWidth: .infinity, minHeight: 260)
                 .listRowSeparator(.hidden)
@@ -638,20 +682,20 @@ private struct LogsView: View {
                 }
             }
         }
-        .navigationTitle("Logs")
+        .navigationTitle(L10n.text("sidebar.logs"))
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
                 Button {
                     state.copyLogs()
                 } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
+                    Label(L10n.text("common.copy"), systemImage: "doc.on.doc")
                 }
                 .disabled(state.activityLogs.isEmpty)
 
                 Button(role: .destructive) {
                     state.clearLogs()
                 } label: {
-                    Label("Clear", systemImage: "trash")
+                    Label(L10n.text("common.clear"), systemImage: "trash")
                 }
                 .disabled(state.activityLogs.isEmpty)
             }
@@ -674,51 +718,235 @@ private struct LogsView: View {
 
 struct SettingsView: View {
     @AppStorage("appearance") private var appearance = "system"
+    @AppStorage("language") private var languageID = AppLanguage.english.rawValue
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @EnvironmentObject private var state: AppState
 
     var body: some View {
         TabView {
-            Form {
-                Picker("Appearance", selection: $appearance) {
-                    Text("System").tag("system")
-                    Text("Light").tag("light")
-                    Text("Dark").tag("dark")
+            generalSettings
+            .tabItem {
+                Label(L10n.text("settings.general"), systemImage: "gearshape")
+            }
+
+            CoreManagementSettings()
+            .tabItem {
+                Label(L10n.text("settings.core"), systemImage: "bolt.horizontal.circle")
+            }
+
+            storageSettings
+            .tabItem {
+                Label(L10n.text("sidebar.proxies"), systemImage: "tray.full")
+            }
+        }
+        .frame(width: 720, height: 560)
+    }
+
+    private var generalSettings: some View {
+        Form {
+            Section(L10n.text("settings.languageAndAppearance")) {
+                Picker(L10n.text("language"), selection: $languageID) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
                 }
-                Toggle("Launch at Login", isOn: $launchAtLogin)
+                Picker(L10n.text("appearance"), selection: $appearance) {
+                    Text(L10n.text("appearance.system")).tag("system")
+                    Text(L10n.text("appearance.light")).tag("light")
+                    Text(L10n.text("appearance.dark")).tag("dark")
+                }
+            }
+            Section(L10n.text("settings.application")) {
+                Toggle(L10n.text("settings.launchAtLogin"), isOn: $launchAtLogin)
                     .disabled(true)
-                Text("Launch at Login becomes available with the native app lifecycle integration.")
+                Text(L10n.text("settings.launchAtLoginDescription"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .formStyle(.grouped)
-            .padding()
-            .tabItem {
-                Label("General", systemImage: "gearshape")
-            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
 
-            Form {
-                LabeledContent("Legacy profile location") {
+    private var storageSettings: some View {
+        Form {
+            Section(L10n.text("settings.dataLocations")) {
+                LabeledContent(L10n.text("settings.legacyProfileLocation")) {
                     Text(LegacyRepository.defaultConfigurationDirectory().path)
                         .textSelection(.enabled)
                         .multilineTextAlignment(.trailing)
                 }
-                LabeledContent("Native profile storage") {
+                LabeledContent(L10n.text("overview.nativeProfileStorage")) {
                     Text(state.nativeStorageLocation)
                         .textSelection(.enabled)
                         .multilineTextAlignment(.trailing)
                 }
-                Button("Reload Legacy Profiles") {
+            }
+            Section {
+                Button(L10n.text("settings.reloadLegacyProfiles")) {
                     state.reloadLegacyData()
                 }
-            }
-            .formStyle(.grouped)
-            .padding()
-            .tabItem {
-                Label("Profiles", systemImage: "tray.full")
+            } footer: {
+                Text(L10n.text("settings.legacyDataDescription"))
             }
         }
-        .frame(width: 600, height: 340)
+        .formStyle(.grouped)
+        .padding()
+    }
+}
+
+private struct CoreManagementSettings: View {
+    @EnvironmentObject private var state: AppState
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.text("settings.coreManagement"))
+                        .font(.title2.weight(.semibold))
+                    Text(L10n.text("settings.coreManagementDescription"))
+                        .foregroundStyle(.secondary)
+                }
+
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Picker(L10n.text("settings.activeCore"), selection: Binding(
+                            get: { state.selectedCore },
+                            set: { state.selectCore($0) }
+                        )) {
+                            ForEach(CoreKind.allCases) { core in
+                                Text(core.displayName).tag(core)
+                            }
+                        }
+                        .disabled(state.isRunning || state.hasActiveCoreDownload)
+
+                        Text(L10n.text("settings.activeCoreDescription"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(4)
+                } label: {
+                    Label(L10n.text("settings.activeCore"), systemImage: "bolt.horizontal.circle.fill")
+                }
+
+                ForEach(CoreKind.allCases) { core in
+                    CoreInstallationCard(core: core)
+                }
+
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SOCKS5 127.0.0.1:\(SingBoxConfigurationGenerator.socksPort)")
+                        Text("HTTP 127.0.0.1:\(SingBoxConfigurationGenerator.httpPort)")
+                    }
+                    .font(.body.monospaced())
+                    .textSelection(.enabled)
+                    .padding(4)
+                } label: {
+                    Label(L10n.text("settings.localEndpoints"), systemImage: "point.3.connected.trianglepath.dotted")
+                }
+
+                Text(L10n.text("settings.localEndpointsDescription"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(24)
+        }
+    }
+}
+
+private struct CoreInstallationCard: View {
+    let core: CoreKind
+    @EnvironmentObject private var state: AppState
+
+    private var record: CoreInstallationRecord? {
+        state.installationRecord(for: core)
+    }
+
+    private var canModifyInstallation: Bool {
+        !state.isRunning && !state.hasActiveCoreDownload
+    }
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(core.displayName)
+                            .font(.headline)
+                        Text(core.isAvailable ? L10n.text("settings.coreReady") : L10n.text("settings.coreNotInstalled"))
+                            .font(.callout)
+                            .foregroundStyle(core.isAvailable ? .green : .secondary)
+                    }
+                    Spacer()
+                    if state.selectedCore == core {
+                        Text(L10n.text("settings.active"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                    }
+                }
+
+                LabeledContent(L10n.text("settings.coreExecutable", core.displayName)) {
+                    Text(core.selectedOrDetectedPath)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .multilineTextAlignment(.trailing)
+                }
+
+                if let record {
+                    LabeledContent(L10n.text("settings.installedVersion")) {
+                        Text(record.version)
+                            .textSelection(.enabled)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    if state.isDownloadingCore(core) {
+                        ProgressView(L10n.text("settings.downloadingCore", core.displayName))
+                            .controlSize(.small)
+                    } else {
+                        Button(core.isAvailable ? L10n.text("settings.updateCore", core.displayName) : L10n.text("settings.downloadCore", core.displayName)) {
+                            state.downloadOfficialCore(core)
+                        }
+                        .disabled(!canModifyInstallation)
+                    }
+
+                    Button(L10n.text("settings.chooseCoreExecutable", core.displayName)) {
+                        chooseExecutable()
+                    }
+                    .disabled(!canModifyInstallation)
+
+                    if core.hasCustomExecutable {
+                        Button(L10n.text("settings.useDetectedCore", core.displayName)) {
+                            core.clearCustomExecutable()
+                            state.refreshCoreAvailability()
+                        }
+                        .disabled(!canModifyInstallation)
+                    }
+
+                    Spacer()
+
+                    Link(L10n.text("settings.officialRelease"), destination: CoreDownloader.officialReleaseURL(for: core))
+                }
+            }
+            .padding(4)
+        } label: {
+            Label(core.displayName, systemImage: core == .xray ? "bolt.horizontal.circle" : "shippingbox")
+        }
+    }
+
+    private func chooseExecutable() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = L10n.text("settings.chooseCoreExecutable", core.displayName)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard FileManager.default.isExecutableFile(atPath: url.path) else {
+            state.presentNotice(L10n.text("core.notExecutable"))
+            return
+        }
+        core.setExecutable(url)
+        state.refreshCoreAvailability()
     }
 }
 

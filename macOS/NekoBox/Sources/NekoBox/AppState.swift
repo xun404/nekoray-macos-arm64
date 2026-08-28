@@ -2,6 +2,13 @@ import AppKit
 import Combine
 import Foundation
 
+enum CoreDownloadStatus: Equatable {
+    case idle
+    case downloading(CoreKind)
+    case completed(CoreKind, String)
+    case failed(CoreKind)
+}
+
 @MainActor
 final class AppState: ObservableObject {
     @Published var selectedSidebarItem: SidebarItem = .overview
@@ -14,26 +21,31 @@ final class AppState: ObservableObject {
     @Published private(set) var notice: String?
     @Published private(set) var coreAvailability: CoreAvailability
     @Published private(set) var isRunning = false
+    @Published private(set) var selectedCore: CoreKind
+    @Published private(set) var coreInstallationRecords: [CoreKind: CoreInstallationRecord] = [:]
+    @Published private(set) var coreDownloadStatus: CoreDownloadStatus = .idle
 
     private let legacyRepository: LegacyRepository
     private let nativeRepository: NativeRepository
-    private let coreService: any CoreService
+    private let coreService: CoreServiceManager
     private var nativeSnapshot: NativeSnapshot
     private var legacySnapshot: LegacySnapshot?
 
     init(
         legacyRepository: LegacyRepository = LegacyRepository(),
         nativeRepository: NativeRepository = NativeRepository(),
-        coreService: any CoreService = DeferredCoreService()
+        coreService: CoreServiceManager = CoreServiceManager()
     ) {
         self.legacyRepository = legacyRepository
         self.nativeRepository = nativeRepository
         self.coreService = coreService
+        selectedCore = coreService.selectedCore
+        coreInstallationRecords = CoreInstallation.allRecords()
         nativeSnapshot = nativeRepository.load()
         coreAvailability = coreService.availability
         reloadLegacyData()
         appendActivity(
-            "Native profile storage is ready at \(nativeRepository.stateURL.path).",
+            L10n.text("state.nativeStorageReady", nativeRepository.stateURL.path),
             level: .info
         )
     }
@@ -59,7 +71,13 @@ final class AppState: ObservableObject {
     }
 
     var coreStatusTitle: String {
-        isRunning ? "Connected" : "Core unavailable"
+        isRunning
+            ? L10n.text("core.status.connected", selectedCore.displayName)
+            : L10n.text("core.status.unavailable", selectedCore.displayName)
+    }
+
+    var coreAvailabilityDescription: String {
+        coreAvailability.description(for: selectedCore)
     }
 
     func profiles(matching query: String = "") -> [ProxyProfile] {
@@ -96,7 +114,7 @@ final class AppState: ObservableObject {
     func reloadLegacyData() {
         legacySnapshot = legacyRepository.load()
         rebuildVisibleData()
-        appendActivity(legacySnapshot?.sourceDescription ?? "Legacy profiles were reloaded.", level: .info)
+        appendActivity(legacySnapshot?.sourceDescription ?? L10n.text("state.legacyProfilesReloaded"), level: .info)
     }
 
     func makeNewProfileDraft() -> ProxyDraft {
@@ -109,7 +127,7 @@ final class AppState: ObservableObject {
 
     func saveProfile(_ draft: ProxyDraft) {
         guard draft.isValid else {
-            notice = "Enter a name, a server address, and a port from 1 to 65535."
+            notice = L10n.text("state.invalidProfile")
             return
         }
 
@@ -120,8 +138,9 @@ final class AppState: ObservableObject {
             nativeSnapshot.profiles[index].address = draft.endpoint
             nativeSnapshot.profiles[index].groupID = draft.groupID
             nativeSnapshot.profiles[index].origin = .native
+            nativeSnapshot.profiles[index].xraySettings = draft.xraySettings
             selectedProfileID = id
-            appendActivity("Updated \(draft.trimmedName).", level: .success)
+            appendActivity(L10n.text("state.profileUpdated", draft.trimmedName), level: .success)
         } else {
             let profile = ProxyProfile(
                 id: nextNativeProfileID(),
@@ -133,12 +152,13 @@ final class AppState: ObservableObject {
                 uploadedBytes: 0,
                 downloadedBytes: 0,
                 testReport: "",
-                origin: .native
+                origin: .native,
+                xraySettings: draft.xraySettings
             )
             nativeSnapshot.profiles.append(profile)
             selectedGroupID = profile.groupID
             selectedProfileID = profile.id
-            appendActivity("Added \(profile.displayedName).", level: .success)
+            appendActivity(L10n.text("state.profileAdded", profile.displayedName), level: .success)
         }
 
         rebuildVisibleData()
@@ -147,12 +167,12 @@ final class AppState: ObservableObject {
 
     func deleteSelectedProfile() {
         guard let profile = selectedProfile else {
-            notice = "Select a proxy to remove."
+            notice = L10n.text("state.selectProxyToRemove")
             return
         }
 
         guard profile.origin == .native else {
-            notice = "Legacy profiles are read-only. Use Edit to create an editable native copy."
+            notice = L10n.text("state.legacyProfileReadOnly")
             return
         }
 
@@ -160,13 +180,13 @@ final class AppState: ObservableObject {
         selectedProfileID = profiles.first(where: { $0.groupID == selectedGroupID && $0.id != profile.id })?.id
         rebuildVisibleData()
         persistNativeData()
-        appendActivity("Removed \(profile.displayedName).", level: .warning)
+        appendActivity(L10n.text("state.profileRemoved", profile.displayedName), level: .warning)
     }
 
     func createGroup(named name: String) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
-            notice = "Enter a name for the group."
+            notice = L10n.text("state.enterGroupName")
             return
         }
 
@@ -183,18 +203,18 @@ final class AppState: ObservableObject {
         selectedProfileID = nil
         rebuildVisibleData()
         persistNativeData()
-        appendActivity("Created the \(group.name) group.", level: .success)
+        appendActivity(L10n.text("state.groupCreated", group.name), level: .success)
     }
 
     func renameGroup(_ group: ProxyGroup, to name: String) {
         guard group.origin == .native else {
-            notice = "Legacy groups are read-only."
+            notice = L10n.text("state.legacyGroupReadOnly")
             return
         }
 
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
-            notice = "Enter a name for the group."
+            notice = L10n.text("state.enterGroupName")
             return
         }
 
@@ -202,12 +222,12 @@ final class AppState: ObservableObject {
         nativeSnapshot.groups[index].name = trimmedName
         rebuildVisibleData()
         persistNativeData()
-        appendActivity("Renamed the group to \(trimmedName).", level: .success)
+        appendActivity(L10n.text("state.groupRenamed", trimmedName), level: .success)
     }
 
     func deleteGroup(_ group: ProxyGroup) {
         guard group.origin == .native else {
-            notice = "Legacy groups are read-only."
+            notice = L10n.text("state.legacyGroupReadOnly")
             return
         }
 
@@ -224,23 +244,24 @@ final class AppState: ObservableObject {
         selectedProfileID = nil
         rebuildVisibleData()
         persistNativeData()
-        appendActivity("Removed the \(group.name) group.", level: .warning)
+        appendActivity(L10n.text("state.groupRemoved", group.name), level: .warning)
     }
 
     func startSelectedProfile() {
         guard let profile = selectedProfile else {
-            notice = "Select a proxy before connecting."
+            notice = L10n.text("state.selectProxyToConnect")
             return
         }
 
         Task {
             do {
                 try await coreService.start(profile: profile)
-                isRunning = true
-                appendActivity("Started \(profile.displayedName).", level: .success)
+                isRunning = coreService.isRunning
+                coreAvailability = coreService.availability
+                appendActivity(L10n.text("state.profileStarted", profile.displayedName), level: .success)
             } catch {
                 notice = error.localizedDescription
-                appendActivity("Connection was not started: \(error.localizedDescription)", level: .warning)
+                appendActivity(L10n.text("state.connectionNotStarted", error.localizedDescription), level: .warning)
             }
         }
     }
@@ -249,36 +270,101 @@ final class AppState: ObservableObject {
         Task {
             do {
                 try await coreService.stop()
-                isRunning = false
-                appendActivity("Stopped the local Core service.", level: .info)
+                isRunning = coreService.isRunning
+                coreAvailability = coreService.availability
+                appendActivity(L10n.text("state.coreStopped"), level: .info)
             } catch {
                 notice = error.localizedDescription
-                appendActivity("Core stop failed: \(error.localizedDescription)", level: .error)
+                appendActivity(L10n.text("state.coreStopFailed", error.localizedDescription), level: .error)
             }
         }
     }
 
     func requestLatencyTest() {
         guard selectedProfile != nil else {
-            notice = "Select a proxy before running a latency test."
+            notice = L10n.text("state.selectProxyToTest")
             return
         }
-        notice = "Latency testing becomes available when the native Core service is connected."
-        appendActivity("Latency test requested before Core integration.", level: .info)
+        notice = L10n.text("state.latencyUnavailable")
+        appendActivity(L10n.text("state.latencyRequested"), level: .info)
     }
 
     func showSystemServiceStatus() {
-        notice = "System Proxy and VPN controls remain unavailable until the native Core and network-extension integrations are complete."
+        notice = L10n.text("state.systemServiceUnavailable")
+    }
+
+    func refreshCoreAvailability() {
+        coreAvailability = coreService.availability
+        isRunning = coreService.isRunning
+        coreInstallationRecords = CoreInstallation.allRecords()
+    }
+
+    func selectCore(_ core: CoreKind) {
+        do {
+            try coreService.select(core)
+            selectedCore = coreService.selectedCore
+            refreshCoreAvailability()
+            appendActivity(L10n.text("state.coreSelected", selectedCore.displayName), level: .info)
+        } catch {
+            notice = error.localizedDescription
+        }
+    }
+
+    func installationRecord(for core: CoreKind) -> CoreInstallationRecord? {
+        coreInstallationRecords[core]
+    }
+
+    func isDownloadingCore(_ core: CoreKind) -> Bool {
+        if case .downloading(let downloadingCore) = coreDownloadStatus {
+            return downloadingCore == core
+        }
+        return false
+    }
+
+    var hasActiveCoreDownload: Bool {
+        if case .downloading = coreDownloadStatus {
+            return true
+        }
+        return false
+    }
+
+    func downloadOfficialCore(_ core: CoreKind) {
+        guard !isRunning else {
+            notice = L10n.text("state.stopCoreBeforeDownload")
+            return
+        }
+        guard !isDownloadingCore(.xray), !isDownloadingCore(.singBox) else { return }
+
+        coreDownloadStatus = .downloading(core)
+        Task {
+            do {
+                let result = try await CoreDownloader.downloadAndInstall(core)
+                core.setExecutable(result.executableURL)
+                coreDownloadStatus = .completed(core, result.version)
+                refreshCoreAvailability()
+                appendActivity(
+                    L10n.text("state.coreDownloaded", core.displayName, result.version),
+                    level: .success
+                )
+            } catch {
+                coreDownloadStatus = .failed(core)
+                notice = error.localizedDescription
+                appendActivity(
+                    L10n.text("state.coreDownloadFailed", core.displayName, error.localizedDescription),
+                    level: .error
+                )
+            }
+        }
     }
 
     func copySelectedEndpoint() {
         guard let profile = selectedProfile else {
-            notice = "Select a proxy to copy its endpoint."
+            notice = L10n.text("state.selectProxyToCopy")
             return
         }
         copyToPasteboard(profile.address)
-        notice = "Copied \(profile.address)."
-        appendActivity("Copied the endpoint for \(profile.displayedName).", level: .info)
+        notice = L10n.text("state.endpointCopied", profile.address)
+        appendActivity(L10n.text("state.endpointCopyLogged", profile.displayedName), level: .info)
     }
 
     func copyLogs() {
@@ -288,12 +374,12 @@ final class AppState: ObservableObject {
         }
         .joined(separator: "\n")
         copyToPasteboard(text)
-        notice = "Copied \(activityLogs.count) log entries."
+        notice = L10n.text("state.logsCopied", String(activityLogs.count))
     }
 
     func clearLogs() {
         activityLogs.removeAll()
-        appendActivity("Cleared the activity log.", level: .info)
+        appendActivity(L10n.text("state.logsCleared"), level: .info)
     }
 
     func clearNotice() {
@@ -355,8 +441,8 @@ final class AppState: ObservableObject {
         do {
             try nativeRepository.save(nativeSnapshot)
         } catch {
-            notice = "Could not save native profiles: \(error.localizedDescription)"
-            appendActivity("Native profile storage failed: \(error.localizedDescription)", level: .error)
+            notice = L10n.text("state.saveFailed", error.localizedDescription)
+            appendActivity(L10n.text("state.storageFailed", error.localizedDescription), level: .error)
         }
     }
 
