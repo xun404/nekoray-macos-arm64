@@ -49,10 +49,10 @@ users can download or select the matching executable in Settings.
 
 ## GitHub Actions release package
 
-`.github/workflows/build-macos.yml` runs on an Apple Silicon macOS runner. On a
-version tag or manual run, it downloads and verifies both official Core files,
-builds and ad-hoc signs the application, then uploads a `NekoBox-macos-arm64.zip`
-artifact. Version-tagged runs also publish that archive in the GitHub Release.
+`.github/workflows/build-macos.yml` runs only when a version tag matching `v*`
+is pushed to an Apple Silicon macOS runner. It downloads and verifies both
+official Core files, builds and ad-hoc signs the application, then publishes a
+`NekoBox-macos-arm64.zip` archive in the GitHub Release.
 
 ## Remaining native work
 
